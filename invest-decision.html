@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Should I invest? — Decision framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0b0b0d; --bg2:#111114; --bg3:#17171b; --bg4:#1e1e23;
+  --border:rgba(255,255,255,0.06); --border2:rgba(255,255,255,0.12); --border3:rgba(255,255,255,0.2);
+  --text:#e6e4de; --muted:#62615c; --muted2:#949288;
+  --accent:#c5ef4a; --accent-dim:rgba(197,239,74,0.07);
+  --red:#ef5a5a; --amber:#efaa4a; --green:#4aef9a; --blue:#4aabef; --purple:#9a7ef5;
+  --mono:'DM Mono',monospace; --serif:'Instrument Serif',serif; --sans:'DM Sans',sans-serif;
+  --radius:14px;
+}
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); font-weight:300; min-height:100vh; overflow-x:hidden; line-height:1.6; }
+body::after { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(197,239,74,0.025) 0%,transparent 60%); pointer-events:none; z-index:0; }
+
+/* HEADER */
+header { position:sticky; top:0; z-index:200; height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; background:rgba(11,11,13,0.92); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+.logo { font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.05em; display:flex; align-items:center; gap:8px; }
+.logo-dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:blink 2.5s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1}60%{opacity:.2} }
+.header-nav { display:flex; gap:4px; }
+.nav-pill { font-family:var(--mono); font-size:10px; letter-spacing:.06em; padding:5px 14px; border-radius:99px; border:1px solid var(--border); background:none; color:var(--muted2); cursor:pointer; transition:all .2s; text-transform:uppercase; }
+.nav-pill:hover { color:var(--text); border-color:var(--border2); }
+.nav-pill.active { background:var(--accent); color:#0b0b0d; border-color:var(--accent); font-weight:500; }
+
+/* HERO */
+.hero { text-align:center; padding:4rem 1.5rem 2.5rem; max-width:700px; margin:0 auto; position:relative; z-index:1; }
+.hero-eyebrow { font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin-bottom:1.25rem; }
+.hero h1 { font-family:var(--serif); font-size:clamp(2.2rem,5.5vw,4rem); font-weight:400; line-height:1.12; margin-bottom:1rem; }
+.hero h1 em { font-style:italic; color:var(--accent); }
+.hero-sub { font-size:14px; color:var(--muted2); max-width:480px; margin:0 auto 2.5rem; line-height:1.75; }
+.mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:500px; margin:0 auto 1rem; }
+.mode-card { border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.25rem 1rem; background:var(--bg2); cursor:pointer; text-align:left; transition:all .2s; }
+.mode-card:hover { border-color:var(--border2); transform:translateY(-2px); }
+.mode-card.active { border-color:var(--accent); background:var(--accent-dim); }
+.mode-icon { font-family:var(--mono); font-size:18px; color:var(--accent); margin-bottom:8px; display:block; }
+.mode-title { font-size:14px; font-weight:500; color:var(--text); margin-bottom:3px; }
+.mode-meta { font-family:var(--mono); font-size:10px; color:var(--muted); line-height:1.5; }
+
+/* TOOL */
+.tool-wrap { max-width:680px; margin:0 auto; padding:0 1.5rem 6rem; position:relative; z-index:1; }
+.disclaimer { background:rgba(239,90,90,0.04); border:1px solid rgba(239,90,90,0.12); border-radius:10px; padding:.7rem 1rem; font-family:var(--mono); font-size:10px; color:var(--muted); line-height:1.7; margin-bottom:1.75rem; }
+.disclaimer b { color:var(--red); font-weight:400; }
+
+/* ENTRY MODE PICKER */
+.entry-picker { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:2rem; }
+.entry-card { border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; background:var(--bg2); cursor:pointer; text-align:left; transition:all .25s; position:relative; overflow:hidden; }
+.entry-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,var(--accent),transparent 60%); opacity:0; transition:opacity .3s; }
+.entry-card:hover { border-color:var(--border2); transform:translateY(-3px); }
+.entry-card.selected { border-color:var(--accent); }
+.entry-card.selected::before { opacity:.04; }
+.ec-icon { font-size:22px; margin-bottom:10px; display:block; }
+.ec-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:5px; }
+.ec-desc { font-size:12px; color:var(--muted); line-height:1.6; }
+.ec-tag { display:inline-block; font-family:var(--mono); font-size:9px; padding:2px 8px; border-radius:99px; margin-top:8px; }
+.ec-tag-manual { background:rgba(148,146,136,0.15); color:var(--muted2); }
+.ec-tag-auto { background:var(--accent-dim); color:var(--accent); border:1px solid rgba(197,239,74,0.2); }
+
+/* TICKER INPUT PANEL */
+.ticker-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem; margin-bottom:1rem; animation:fadeUp .28s cubic-bezier(.4,0,.2,1); }
+.ticker-panel::before { content:''; display:block; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.12; margin-bottom:1.75rem; margin-left:-1.75rem; margin-right:-1.75rem; }
+.tp-title { font-family:var(--serif); font-size:1.4rem; color:var(--text); margin-bottom:.4rem; }
+.tp-sub { font-size:12px; color:var(--muted); margin-bottom:1.5rem; line-height:1.6; }
+.input-row { display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:1rem; }
+@media(max-width:500px){.input-row{grid-template-columns:1fr;}}
+.field-wrap { display:flex; flex-direction:column; gap:6px; }
+.field-label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.05em; }
+.field-input { background:var(--bg3); border:1px solid var(--border2); border-radius:9px; padding:10px 14px; font-family:var(--mono); font-size:13px; color:var(--text); outline:none; transition:border-color .15s; width:100%; }
+.field-input:focus { border-color:var(--accent); }
+.field-input::placeholder { color:var(--muted); }
+.api-note { font-family:var(--mono); font-size:10px; color:var(--muted); line-height:1.6; margin-bottom:1.25rem; }
+.api-note a { color:var(--accent); text-decoration:none; }
+.api-note a:hover { text-decoration:underline; }
+.fetch-btn { width:100%; padding:13px; background:var(--accent); border:none; border-radius:10px; color:#0b0b0d; font-family:var(--mono); font-size:12px; font-weight:500; letter-spacing:.06em; cursor:pointer; transition:all .2s; }
+.fetch-btn:hover { background:#d4f55a; transform:translateY(-1px); }
+.fetch-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+.key-saved-row { display:flex; align-items:center; gap:8px; margin-bottom:.75rem; font-family:var(--mono); font-size:10px; color:var(--muted); }
+.key-saved-dot { width:5px; height:5px; border-radius:50%; background:var(--green); }
+.clear-key-btn { font-family:var(--mono); font-size:10px; color:var(--muted); background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; }
+.clear-key-btn:hover { color:var(--red); }
+
+/* LOADING STATE */
+.loading-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:2.5rem 1.75rem; text-align:center; animation:fadeUp .28s cubic-bezier(.4,0,.2,1); }
+.loading-spinner { width:32px; height:32px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 1rem; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-ticker { font-family:var(--mono); font-size:20px; color:var(--accent); margin-bottom:.4rem; }
+.loading-sub { font-family:var(--mono); font-size:11px; color:var(--muted); }
+
+/* ERROR STATE */
+.error-panel { background:rgba(239,90,90,0.04); border:1px solid rgba(239,90,90,0.2); border-radius:var(--radius); padding:1.25rem; margin-bottom:1rem; animation:fadeUp .28s cubic-bezier(.4,0,.2,1); }
+.error-title { font-family:var(--mono); font-size:11px; color:var(--red); margin-bottom:.4rem; letter-spacing:.04em; }
+.error-body { font-size:12px; color:var(--muted2); line-height:1.6; }
+
+/* DATA SUMMARY CARD */
+.data-summary { background:var(--bg2); border:1px solid rgba(197,239,74,0.15); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.25rem; animation:fadeUp .3s cubic-bezier(.4,0,.2,1); }
+.ds-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:8px; }
+.ds-company { display:flex; align-items:center; gap:10px; }
+.ds-ticker-badge { font-family:var(--mono); font-size:11px; font-weight:500; color:#0b0b0d; background:var(--accent); padding:3px 10px; border-radius:5px; }
+.ds-name { font-size:14px; font-weight:500; color:var(--text); }
+.ds-sector { font-family:var(--mono); font-size:10px; color:var(--muted); }
+.ds-fmp-tag { font-family:var(--mono); font-size:9px; color:var(--accent); background:var(--accent-dim); border:1px solid rgba(197,239,74,0.2); padding:2px 8px; border-radius:99px; }
+.ds-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+@media(max-width:500px){.ds-grid{grid-template-columns:repeat(2,1fr);}}
+.ds-metric { background:var(--bg3); border-radius:9px; padding:.65rem .8rem; border:1px solid var(--border); }
+.ds-m-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.04em; margin-bottom:3px; }
+.ds-m-val { font-size:13px; font-weight:500; }
+.ds-m-val.good { color:var(--green); }
+.ds-m-val.warn { color:var(--amber); }
+.ds-m-val.bad { color:var(--red); }
+.ds-m-val.neutral { color:var(--text); }
+.ds-m-sub { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:1px; }
+
+/* PREFILL BADGE */
+.prefill-card { background:rgba(197,239,74,0.04); border:1px solid rgba(197,239,74,0.15); border-radius:10px; padding:.9rem 1rem; margin-bottom:1.1rem; }
+.pf-header { display:flex; align-items:center; gap:8px; margin-bottom:.65rem; }
+.pf-tag { font-family:var(--mono); font-size:9px; color:var(--accent); background:var(--accent-dim); border:1px solid rgba(197,239,74,0.2); padding:2px 8px; border-radius:99px; letter-spacing:.04em; }
+.pf-evidence { font-family:var(--mono); font-size:11px; color:var(--muted2); line-height:1.7; flex:1; }
+.pf-suggestion { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.pf-suggested-label { font-size:12px; color:var(--text); }
+.pf-suggested-val { font-size:12px; font-weight:500; color:var(--accent); font-family:var(--mono); }
+.override-btn { font-family:var(--mono); font-size:10px; color:var(--muted); background:none; border:1px solid var(--border); border-radius:6px; padding:3px 10px; cursor:pointer; transition:all .15s; flex-shrink:0; }
+.override-btn:hover { border-color:var(--border2); color:var(--muted2); }
+.override-opts { display:flex; flex-direction:column; gap:6px; margin-top:.75rem; }
+
+/* PROGRESS */
+.progress-bar-wrap { margin-bottom:1.5rem; }
+.progress-top { display:flex; justify-content:space-between; margin-bottom:6px; }
+.prog-label { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.05em; }
+.prog-pct { font-family:var(--mono); font-size:10px; color:var(--accent); }
+.track { height:2px; background:var(--border); border-radius:99px; }
+.fill { height:100%; background:var(--accent); border-radius:99px; transition:width .5s cubic-bezier(.4,0,.2,1); }
+.cat-dots { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; }
+.cat-dot-item { display:flex; align-items:center; gap:5px; }
+.cat-dot { width:6px; height:6px; border-radius:50%; border:1px solid var(--border2); transition:all .3s; }
+.cat-label { font-family:var(--mono); font-size:9px; color:var(--muted); }
+.breadcrumbs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:1.25rem; min-height:22px; }
+.crumb { font-family:var(--mono); font-size:9px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); padding:2px 8px; border-radius:99px; }
+.crumb strong { color:var(--muted2); font-weight:400; }
+
+/* QUESTION CARD */
+.q-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.75rem; margin-bottom:.75rem; animation:fadeUp .28s cubic-bezier(.4,0,.2,1); position:relative; overflow:hidden; }
+.q-card::after { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent 0%,var(--accent) 50%,transparent 100%); opacity:.12; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+.q-meta { display:flex; align-items:center; gap:8px; margin-bottom:.9rem; }
+.q-num { font-family:var(--mono); font-size:10px; color:var(--muted); letter-spacing:.06em; }
+.q-cat-tag { font-family:var(--mono); font-size:9px; padding:2px 8px; border-radius:99px; letter-spacing:.04em; border:1px solid; }
+.q-meta-line { flex:1; height:1px; background:var(--border); }
+.q-text { font-family:var(--serif); font-size:1.35rem; color:var(--text); line-height:1.3; margin-bottom:.5rem; }
+.q-hint { font-size:12px; color:var(--muted); line-height:1.65; margin-bottom:1.25rem; font-style:italic; border-left:2px solid var(--border); padding-left:.75rem; }
+.opts { display:flex; flex-direction:column; gap:7px; }
+.opt { display:flex; align-items:flex-start; gap:12px; padding:12px 16px; border:1px solid var(--border); border-radius:10px; background:var(--bg3); cursor:pointer; transition:all .15s; width:100%; font-family:var(--sans); color:var(--text); font-weight:300; text-align:left; position:relative; }
+.opt::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--accent); border-radius:2px 0 0 2px; opacity:0; transition:opacity .15s; }
+.opt:hover { border-color:var(--border2); background:rgba(255,255,255,0.025); transform:translateX(3px); }
+.opt:hover::before { opacity:1; }
+.opt:hover .opt-key { border-color:var(--accent); color:var(--accent); }
+.opt.prefilled-selected { border-color:rgba(197,239,74,0.4); background:rgba(197,239,74,0.04); }
+.opt.prefilled-selected::before { opacity:1; }
+.opt-key { font-family:var(--mono); font-size:10px; color:var(--muted); background:var(--bg); border:1px solid var(--border); width:20px; height:20px; border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all .15s; }
+.opt-body { flex:1; }
+.opt-label { font-size:13px; line-height:1.4; }
+.opt-sub { font-size:11px; color:var(--muted); margin-top:2px; line-height:1.5; }
+.back-btn { font-family:var(--mono); font-size:10px; color:var(--muted); background:none; border:none; cursor:pointer; letter-spacing:.04em; padding:4px 0; transition:color .15s; display:flex; align-items:center; gap:5px; }
+.back-btn:hover { color:var(--muted2); }
+
+/* RESULT */
+.result-wrap { animation:fadeUp .4s cubic-bezier(.4,0,.2,1); }
+.result-main { border-radius:var(--radius); padding:1.75rem; margin-bottom:.75rem; border:1px solid; }
+.result-main.buy { border-color:rgba(74,239,154,.25); background:rgba(74,239,154,.04); }
+.result-main.lean-buy { border-color:rgba(74,239,154,.15); background:rgba(74,239,154,.025); }
+.result-main.caution { border-color:rgba(239,170,74,.25); background:rgba(239,170,74,.04); }
+.result-main.research { border-color:rgba(74,171,239,.2); background:rgba(74,171,239,.04); }
+.result-main.avoid { border-color:rgba(239,90,90,.25); background:rgba(239,90,90,.04); }
+.result-main.hard-stop { border-color:rgba(239,90,90,.4); background:rgba(239,90,90,.06); }
+.result-verdict { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:.4rem; }
+.buy .result-verdict,.lean-buy .result-verdict { color:var(--green); }
+.caution .result-verdict { color:var(--amber); }
+.research .result-verdict { color:var(--blue); }
+.avoid .result-verdict,.hard-stop .result-verdict { color:var(--red); }
+.result-title { font-family:var(--serif); font-size:1.9rem; line-height:1.15; margin-bottom:1rem; }
+.buy .result-title,.lean-buy .result-title { color:var(--green); }
+.caution .result-title { color:var(--amber); }
+.research .result-title { color:var(--blue); }
+.avoid .result-title,.hard-stop .result-title { color:var(--red); }
+.result-body { font-size:13px; color:var(--muted2); line-height:1.8; margin-bottom:1.25rem; }
+.result-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:1.25rem; }
+@media(max-width:460px){.result-grid{grid-template-columns:1fr;}}
+.r-stat { background:rgba(0,0,0,.25); border-radius:9px; padding:.75rem .9rem; border:1px solid var(--border); }
+.r-label { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px; }
+.r-val { font-size:12px; color:var(--text); }
+.dim-section { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:.75rem; }
+.dim-title { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:1rem; }
+.dim-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.dim-row:last-child { margin-bottom:0; }
+.dim-name { font-size:11px; color:var(--muted2); width:140px; flex-shrink:0; }
+.dim-track { flex:1; height:4px; background:var(--bg3); border-radius:99px; overflow:hidden; }
+.dim-bar { height:100%; border-radius:99px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+.dim-score { font-family:var(--mono); font-size:10px; color:var(--muted); width:30px; text-align:right; flex-shrink:0; }
+.flags-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:.75rem; }
+.flags-title { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
+.flag-item { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; line-height:1.5; }
+.flag-item:last-child { border-bottom:none; }
+.flag-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.flag-red{background:var(--red);} .flag-amber{background:var(--amber);} .flag-green{background:var(--green);}
+.flag-text { color:var(--muted2); }
+.source-badge { font-family:var(--mono); font-size:8px; color:var(--accent); background:var(--accent-dim); padding:1px 5px; border-radius:3px; margin-left:5px; flex-shrink:0; align-self:center; }
+.answers-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; margin-bottom:.75rem; }
+.answers-title { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.9rem; }
+.ans-cat-h { font-family:var(--mono); font-size:9px; margin:.75rem 0 .4rem; opacity:.8; }
+.ans-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border); gap:10px; }
+.ans-row:last-child { border-bottom:none; }
+.ans-key { font-size:11px; color:var(--muted); flex-shrink:0; max-width:52%; }
+.ans-right { display:flex; align-items:center; gap:5px; }
+.ans-val { font-family:var(--mono); font-size:10px; color:var(--muted2); text-align:right; }
+.ans-auto-tag { font-family:var(--mono); font-size:8px; color:var(--accent); background:var(--accent-dim); padding:1px 5px; border-radius:3px; }
+.restart-btn { width:100%; padding:13px; background:none; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-family:var(--mono); font-size:11px; letter-spacing:.05em; cursor:pointer; transition:all .2s; }
+.restart-btn:hover { border-color:var(--accent); color:var(--accent); }
+footer { border-top:1px solid var(--border); padding:1.25rem 1.5rem; text-align:center; font-family:var(--mono); font-size:10px; color:var(--muted); }
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-dot"></div>INVEST/DECIDE</div>
+  <div class="header-nav">
+    <button class="nav-pill active" id="nav-stocks" onclick="switchMode('stocks')">Stocks</button>
+    <button class="nav-pill" id="nav-options" onclick="switchMode('options')">Options</button>
+  </div>
+</header>
+<div class="hero">
+  <div class="hero-eyebrow">// investment decision framework</div>
+  <h1>Should you <em>actually</em><br>invest in this?</h1>
+  <p class="hero-sub">A structured, honest framework built around the questions professional investors ask. Fully manual or semi-automated with live financial data.</p>
+  <div class="mode-grid">
+    <button class="mode-card active" id="card-stocks" onclick="switchMode('stocks')"><span class="mode-icon">◈</span><div class="mode-title">Stocks</div><div class="mode-meta">28 questions · 6 dimensions</div></button>
+    <button class="mode-card" id="card-options" onclick="switchMode('options')"><span class="mode-icon">◉</span><div class="mode-title">Options</div><div class="mode-meta">18 questions · 5 dimensions</div></button>
+  </div>
+</div>
+<div class="tool-wrap">
+  <div class="disclaimer"><b>NOT financial advice.</b> Educational only. Cannot account for your personal situation, tax position, or full risk profile. Financial data sourced from Financial Modeling Prep — verify independently. Never invest money you cannot afford to lose.</div>
+  <div id="root"></div>
+</div>
+<footer>Educational tool only &mdash; not financial advice &mdash; 2025</footer>
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const AV_BASE = 'https://www.alphavantage.co/query';
+const CAT_COLOR = {
+  'Preparation':'#4aabef','Business Quality':'#9a7ef5','Financial Health':'#4aef9a',
+  'Valuation':'#c5ef4a','Risk Factors':'#efaa4a','Personal Finance':'#ef8aaa',
+  'Experience':'#4aabef','Directional Setup':'#9a7ef5','Volatility & Pricing':'#4aef9a',
+  'Timing':'#c5ef4a','Risk Management':'#efaa4a','Exit Planning':'#ef8aaa'
+};
+
+// Questions auto-fillable from FMP data (stocks only)
+const AUTO_FILL_IDS = ['revenue_trend','margins','cashflow','roic','debt','interest_coverage','val_history','accounting_quality'];
+
+// ─── STOCK QUESTIONS ──────────────────────────────────────────────────────────
+const STOCK_Q = [
+  {id:'thesis',cat:'Preparation',q:'Can you articulate your investment thesis in two clear sentences?',hint:'If you cannot explain specifically why this stock should be worth more in the future, you are speculating — not investing. Vague optimism is not a thesis.',opts:[
+    {val:'clear',label:'Yes — clearly and specifically',sub:'I can name the exact reason this stock is undervalued or has a durable growth path'},
+    {val:'vague',label:'Roughly — general sense of upside',sub:'I have a feel for it but nothing written down or tested'},
+    {val:'no',label:'No — I\'ve seen it recommended or it\'s popular',sub:'Following tips, social media, or news without independent analysis'}]},
+  {id:'contrarian',cat:'Preparation',q:'Is your thesis contrarian, or does the market already agree with you?',hint:'If everyone already agrees the stock is great, that view is priced in. The biggest returns come from being right when others are wrong.',opts:[
+    {val:'contrarian',label:'Contrarian — I see something the market is missing',sub:'My view differs meaningfully from the prevailing consensus'},
+    {val:'quality',label:'Quality at fair price — quality is underappreciated even if not cheap',sub:''},
+    {val:'consensus',label:'Consensus — widely considered a great investment',sub:'Most analysts agree; thesis is well-known and likely already priced in'},
+    {val:'unknown',label:'I have not thought about this',sub:''}]},
+  {id:'bear_case',cat:'Preparation',q:'Can you clearly state the bear case against this investment?',hint:'Understanding why you could be wrong is as important as knowing why you could be right. If you cannot steelman the other side, your analysis is one-sided.',opts:[
+    {val:'yes',label:'Yes — I understand the main bear arguments and have responses to them',sub:''},
+    {val:'partial',label:'Somewhat — I know risks exist but have not fully worked through them',sub:''},
+    {val:'no',label:'No — I have not seriously considered why this might go wrong',sub:''}]},
+  {id:'research_depth',cat:'Preparation',q:'How deeply have you researched this company?',hint:'Minimum for a considered investment: last two annual reports, recent earnings calls, and at least one competitor filing. Most retail losses stem from surface-level research.',opts:[
+    {val:'deep',label:'Deep — annual reports, 10-K/10-Q, earnings calls, competitor analysis',sub:'Primary source documents; I know the business intimately'},
+    {val:'medium',label:'Medium — financial summaries, analyst reports, earnings headlines',sub:'I understand the narrative and key numbers but not from primary sources'},
+    {val:'shallow',label:'Shallow — articles, social media, YouTube videos',sub:'Secondary sources only; have not looked at the actual financials'},
+    {val:'none',label:'None — name recognition, a tip, or gut feel',sub:''}]},
+  {id:'exit_plan',cat:'Preparation',q:'Have you defined your exit criteria before investing?',hint:'Professionals define exits before entering — both the upside target and the "I was wrong" level. Emotional exits at the worst moment are the most reliable source of retail losses.',opts:[
+    {val:'yes',label:'Yes — I have a price target and a level where I would accept I was wrong',sub:''},
+    {val:'partial',label:'Roughly — I have a general sense of when I would sell',sub:''},
+    {val:'no',label:'No — I will figure it out as I go',sub:'This is how panic-selling at market lows happens'}]},
+  {id:'moat',cat:'Business Quality',q:'Does the company have a durable competitive moat?',hint:'A moat protects profit margins from competitors. Sources: brand power, network effects, switching costs, cost advantages, patents, regulatory licenses. Could a well-funded competitor take meaningful market share in 5 years?',opts:[
+    {val:'strong',label:'Wide moat — genuinely hard to replicate',sub:'Network effects, high switching costs, or structural scale advantages'},
+    {val:'narrow',label:'Narrow moat — some advantages but competition exists',sub:'Brand loyalty or niche positioning, but not structurally dominant'},
+    {val:'none',label:'No moat — easily competed away',sub:'Commodity product, price competition, or low differentiation'},
+    {val:'unknown',label:'I have not seriously assessed this',sub:''}]},
+  {id:'moat_trend',cat:'Business Quality',q:'Is the competitive moat widening or narrowing?',hint:'A company with a strong moat that is shrinking is more dangerous than a narrow moat that is expanding. Moat direction matters as much as current width.',opts:[
+    {val:'widening',label:'Widening — the moat is getting stronger over time',sub:'Market share, pricing power, or network effects are growing'},
+    {val:'stable',label:'Stable — moat is intact but not expanding',sub:''},
+    {val:'narrowing',label:'Narrowing — competitive pressure is eroding advantages',sub:'Margins compressing, share slipping, or disruption emerging'},
+    {val:'unknown',label:'Not sure',sub:''}]},
+  {id:'revenue_trend',cat:'Business Quality',q:'What is the revenue growth trend over the past 3 years?',hint:'Consistent revenue growth confirms demand. Slowing or declining revenue is a warning. Distinguish organic growth from acquisition-driven growth — they have different quality.',autoFill:true,opts:[
+    {val:'accelerating',label:'Accelerating — growth rate is increasing year over year',sub:''},
+    {val:'steady',label:'Steady — consistent 8%+ annual organic growth',sub:''},
+    {val:'slowing',label:'Slowing — growth rate is declining each year',sub:'Deceleration often precedes significant multiple compression'},
+    {val:'flat',label:'Flat or declining revenue',sub:''},
+    {val:'unknown',label:'I have not checked revenue trends',sub:''}]},
+  {id:'margins',cat:'Business Quality',q:'What are gross margins and which direction are they trending?',hint:'Gross margin reveals pricing power. High and stable margins signal a moat. Falling margins signal competitive pressure, input cost inflation, or a commoditising business.',autoFill:true,opts:[
+    {val:'high_stable',label:'High and stable or expanding (40%+ gross margin)',sub:'Strong pricing power — earns well above cost of goods'},
+    {val:'moderate',label:'Moderate (15–40%) and stable',sub:'Acceptable but watch for compression'},
+    {val:'low',label:'Low (under 15%) — thin margin business',sub:'Highly sensitive to cost increases or pricing pressure'},
+    {val:'declining',label:'Margins are declining regardless of starting level',sub:'Typically the most important warning signal in any business'},
+    {val:'unknown',label:'I have not checked margins',sub:''}]},
+  {id:'customer_conc',cat:'Business Quality',q:'Does the company have significant customer concentration risk?',hint:'If one customer accounts for more than 20% of revenue, losing that relationship would be catastrophic. Check the "significant customers" disclosure in the annual report.',opts:[
+    {val:'diversified',label:'Diversified — no single customer above 10% of revenue',sub:''},
+    {val:'moderate',label:'Moderate — one customer is 10 to 20% of revenue',sub:'Acceptable but monitor closely'},
+    {val:'concentrated',label:'Concentrated — one customer above 20% of revenue',sub:'Binary risk if that relationship changes'},
+    {val:'unknown',label:'I have not checked customer concentration',sub:''}]},
+  {id:'management',cat:'Business Quality',q:'How would you rate the management team?',hint:'Look for: track record hitting guidance, capital allocation history, insider ownership levels, and honesty on earnings calls when results disappoint.',opts:[
+    {val:'excellent',label:'Excellent — proven operators, high insider ownership, disciplined capital allocation',sub:''},
+    {val:'good',label:'Good — solid track record, no major red flags',sub:''},
+    {val:'average',label:'Average — mixed record or recently new leadership',sub:''},
+    {val:'poor',label:'Poor — missed guidance repeatedly, poor capital allocation',sub:''},
+    {val:'unknown',label:'I have not researched the management team',sub:''}]},
+  {id:'insider_activity',cat:'Business Quality',q:'What has insider buying or selling activity looked like recently?',hint:'Insiders sell for many reasons but only buy for one: they believe the stock is going up. Cluster buying by multiple executives simultaneously is a particularly strong signal.',opts:[
+    {val:'buying',label:'Insiders are actively buying — multiple executives purchasing shares',sub:'Strong alignment signal'},
+    {val:'neutral',label:'No significant insider activity either way',sub:'Neutral'},
+    {val:'selling',label:'Significant insider selling in recent months',sub:'Could be routine; understand the specific reason'},
+    {val:'unknown',label:'I have not checked insider transactions',sub:''}]},
+  {id:'cashflow',cat:'Financial Health',q:'What is the free cash flow profile of the business?',hint:'Free cash flow = operating cash flow minus capex. This is the real cash the business generates. Earnings can be manipulated; cash flow is substantially harder to fake.',autoFill:true,opts:[
+    {val:'strong',label:'Strong positive FCF, consistently growing year over year',sub:'Genuinely cash-generative with an improving trajectory'},
+    {val:'positive',label:'Positive FCF but flat or inconsistent',sub:'Profitable but cash generation is lumpy'},
+    {val:'burning',label:'Burning cash — negative free cash flow',sub:'May be acceptable if growing rapidly with a clear path to profitability'},
+    {val:'unknown',label:'I have not examined the cash flow statement',sub:''}]},
+  {id:'roic',cat:'Financial Health',q:'What is the Return on Invested Capital (ROIC)?',hint:'Above 15% is good; above 20% is excellent; above 25% signals genuine durable advantages. If ROIC consistently exceeds cost of capital, the company is compounding value.',autoFill:true,opts:[
+    {val:'excellent',label:'Excellent — ROIC consistently above 20%',sub:'Creating substantial value with every dollar deployed'},
+    {val:'good',label:'Good — ROIC 12 to 20%',sub:''},
+    {val:'average',label:'Average — ROIC 6 to 12%',sub:'Barely above cost of capital; not meaningfully compounding'},
+    {val:'poor',label:'Poor — ROIC below 6% or negative',sub:'Actively destroying shareholder capital'},
+    {val:'unknown',label:'I have not calculated ROIC',sub:''}]},
+  {id:'debt',cat:'Financial Health',q:'How is the balance sheet positioned?',hint:'Net debt/EBITDA above 3x is elevated; above 5x is high risk. In downturns, leveraged companies fail first. Also check when debt matures.',autoFill:true,opts:[
+    {val:'net_cash',label:'Net cash — more cash than total debt',sub:'Fortress balance sheet with maximum flexibility'},
+    {val:'low',label:'Low leverage — net debt/EBITDA below 2x',sub:'Conservative and easily serviceable'},
+    {val:'moderate',label:'Moderate leverage — 2 to 3.5x net debt/EBITDA',sub:'Manageable in most environments'},
+    {val:'high',label:'High leverage — above 3.5x net debt/EBITDA',sub:'Vulnerable in recessions or rising rate environments'},
+    {val:'unknown',label:'I have not examined the balance sheet',sub:''}]},
+  {id:'interest_coverage',cat:'Financial Health',q:'What is the interest coverage ratio?',hint:'EBIT divided by interest expense. Below 3x means the company uses much of its operating profit just to service debt. Below 1.5x is a danger zone.',autoFill:true,opts:[
+    {val:'strong',label:'Strong — EBIT covers interest 5x or more',sub:'No near-term debt service risk'},
+    {val:'adequate',label:'Adequate — 2 to 5x coverage',sub:'Manageable but limited buffer'},
+    {val:'weak',label:'Weak — below 2x interest coverage',sub:'Vulnerable to earnings shortfalls or rate increases'},
+    {val:'na',label:'Not applicable — no significant debt',sub:''},
+    {val:'unknown',label:'I have not checked',sub:''}]},
+  {id:'accounting_quality',cat:'Financial Health',q:'Are there any red flags in the accounting quality?',hint:'Warning signs: earnings growing much faster than cash flow; large "one-time" charges that repeat; revenue recognised before cash received; aggressive goodwill; frequent auditor changes.',autoFill:true,opts:[
+    {val:'clean',label:'Clean — high cash conversion, no unusual recurring items',sub:'Earnings quality is high; reported results reflect economic reality'},
+    {val:'minor',label:'Some complexity but nothing alarming',sub:'One-time items exist but appear genuinely non-recurring'},
+    {val:'concerns',label:'I have identified red flags',sub:'Earnings and cash flow diverging, or unusual items repeating suspiciously'},
+    {val:'unknown',label:'I have not examined accounting quality',sub:''}]},
+  {id:'val_peers',cat:'Valuation',q:'How does the valuation compare to industry peers?',hint:'Use EV/EBITDA, P/E, or P/FCF. A premium multiple requires premium growth or quality. A discount requires a reason — understand why it\'s cheap before assuming it\'s a bargain.',opts:[
+    {val:'discount',label:'Trading at a meaningful discount to peers — and I know why',sub:'Lower multiple explained by a temporary issue or market misunderstanding'},
+    {val:'fair',label:'In line with industry peers',sub:'Fairly valued relative to similar businesses'},
+    {val:'premium_justified',label:'Premium to peers but clearly justified',sub:'Superior growth, margins, or ROIC warrants the higher multiple'},
+    {val:'expensive',label:'Expensive relative to peers — hard to justify',sub:'Priced for perfection; any miss will be punished severely'},
+    {val:'unknown',label:'I have not run peer valuation comparisons',sub:''}]},
+  {id:'val_history',cat:'Valuation',q:'How does the valuation compare to the stock\'s own historical range?',hint:'A stock at the top of its 5-year multiple range is pricing in the best-case scenario. At historical lows may be an opportunity — or a structural decline. Know which.',autoFill:true,opts:[
+    {val:'low',label:'At or below historical average multiples',sub:'Trading cheap relative to its own history'},
+    {val:'average',label:'Around the historical average',sub:''},
+    {val:'high',label:'Above historical average — near multi-year highs',sub:'Pricing in above-average future outcomes'},
+    {val:'unknown',label:'I have not checked historical valuation multiples',sub:''}]},
+  {id:'margin_safety',cat:'Valuation',q:'What is your estimated margin of safety?',hint:'Buying at a 30%+ discount to intrinsic value gives room to be wrong and still not lose money permanently.',opts:[
+    {val:'large',label:'Large — stock appears 30%+ below my intrinsic value estimate',sub:'Real cushion if some assumptions turn out wrong'},
+    {val:'modest',label:'Modest — 10 to 30% below estimated intrinsic value',sub:'Some buffer but limited room for error'},
+    {val:'none',label:'Little to none — near or above estimated intrinsic value',sub:'Requires everything to go right to generate returns'},
+    {val:'unknown',label:'I have not estimated intrinsic value',sub:''}]},
+  {id:'growth_priced',cat:'Valuation',q:'How much growth is already priced into the stock?',hint:'A 30x P/E requires years of strong growth just to justify the current price. Run the implied growth rate backwards from the multiple to understand what the market is assuming.',opts:[
+    {val:'conservative',label:'Conservative — I can be right at modest growth rates',sub:'Market is pricing in low expectations; relatively easy to beat'},
+    {val:'moderate',label:'Moderate — continued solid execution required',sub:'Reasonable bar; achievable but not forgiven if missed'},
+    {val:'aggressive',label:'Aggressive — market pricing in sustained high growth',sub:'One bad quarter can trigger a sharp re-rating down'},
+    {val:'unknown',label:'I have not assessed what growth is implied',sub:''}]},
+  {id:'sector',cat:'Risk Factors',q:'What is the structural outlook for this industry over the next 5 to 10 years?',hint:'Even excellent companies face headwinds in structurally declining industries. The tide matters as much as the quality of the individual boat.',opts:[
+    {val:'strong_growth',label:'Strong tailwinds — secular growth driven by technology, demographics, or regulation',sub:''},
+    {val:'moderate',label:'Moderate growth — stable, GDP-like industry',sub:''},
+    {val:'mature',label:'Mature — slow growth or ex-growth',sub:''},
+    {val:'declining',label:'Structural decline — industry is meaningfully shrinking',sub:'Disruption or changing consumer behaviour driving secular decline'},
+    {val:'unknown',label:'I am not sure about the industry trajectory',sub:''}]},
+  {id:'regulatory',cat:'Risk Factors',q:'Is there significant regulatory or political risk?',hint:'Healthcare pricing, tech antitrust, energy subsidies, financial regulation — a single regulatory decision can permanently alter a company\'s economics.',opts:[
+    {val:'low',label:'Low — stable regulatory environment, minimal government dependency',sub:''},
+    {val:'moderate',label:'Moderate — some oversight but well-established and manageable',sub:''},
+    {val:'high',label:'High — under active regulatory scrutiny or dependent on government policy',sub:'Antitrust risk, pricing regulation, or subsidy dependency'},
+    {val:'unknown',label:'I have not assessed regulatory risk',sub:''}]},
+  {id:'macro_sensitivity',cat:'Risk Factors',q:'How sensitive is this company to the macroeconomic cycle?',hint:'Cyclical stocks are hit hard in recessions. Rate-sensitive businesses are hurt by rising interest rates. Know your exposure before macro conditions change.',opts:[
+    {val:'defensive',label:'Defensive — earnings largely uncorrelated with the economic cycle',sub:'Consumer staples, healthcare, insurance, essential utilities'},
+    {val:'moderate',label:'Moderately cyclical — some sensitivity',sub:''},
+    {val:'cyclical',label:'Highly cyclical — earnings follow the economic cycle',sub:'Amplified upside in expansions, amplified downside in contractions'},
+    {val:'rate_sensitive',label:'Rate-sensitive — significantly affected by interest rate direction',sub:'REITs, long-duration growth, banks, insurance'}]},
+  {id:'geopolitical',cat:'Risk Factors',q:'Is there meaningful geopolitical or supply chain concentration risk?',hint:'Revenue concentrated in politically unstable regions, manufacturing in a single country, or trade restriction exposure are risks that seem theoretical until they materialise suddenly.',opts:[
+    {val:'low',label:'Low — geographically diversified, no significant single-country exposure',sub:''},
+    {val:'moderate',label:'Moderate — some exposure but spread across regions',sub:''},
+    {val:'high',label:'High — concentrated geopolitical risk or fragile supply chain',sub:'Heavy single-country manufacturing, rare earth dependency, sanctioned markets'},
+    {val:'unknown',label:'I have not assessed geopolitical risk',sub:''}]},
+  {id:'horizon',cat:'Personal Finance',q:'What is your investment time horizon for this position?',hint:'Stock markets are reliably higher over 10+ years. Over 1 year, individual stocks can be essentially random. Shorter horizons require timing precision — a different and harder skillset.',opts:[
+    {val:'very_long',label:'10 years or more',sub:'Time is your greatest edge; short-term volatility is irrelevant noise'},
+    {val:'long',label:'5 to 10 years',sub:'Strong horizon; macro fluctuations matter less'},
+    {val:'medium',label:'1 to 5 years',sub:'Adequate but requires some macro timing judgement too'},
+    {val:'short',label:'Under 12 months',sub:'This is trading, not investing; requires a different skillset entirely'}]},
+  {id:'position_size',cat:'Personal Finance',q:'What percentage of your investable assets will this represent?',hint:'At 20%+ in a single stock, your financial outcomes are dominated by one bet. Even professionals with full-time research rarely exceed 10% in a single position.',opts:[
+    {val:'small',label:'Under 5%',sub:'Prudent diversification; cannot make or break the portfolio'},
+    {val:'moderate',label:'5 to 10% — meaningful but manageable',sub:'Normal for a high-conviction position in a diversified portfolio'},
+    {val:'large',label:'10 to 20% — large, concentrated position',sub:'Requires very high conviction and consistent monitoring'},
+    {val:'very_large',label:'Over 20% — very concentrated single-stock bet',sub:'Single-stock risk now dominates your financial trajectory'}]},
+  {id:'afford_loss',cat:'Personal Finance',q:'Can you genuinely afford to lose this entire investment?',hint:'Individual stocks can go to zero. Blue chips have done it. Never invest rent, emergency funds, a house deposit, or any capital you need within 5 years.',opts:[
+    {val:'yes',label:'Yes — pure discretionary investment capital',sub:'Losing it would not materially affect my life or plans'},
+    {val:'partial',label:'I could absorb a 50% loss but not a total loss',sub:'Partially discretionary'},
+    {val:'no',label:'No — I need this money or it is essential capital',sub:'This should not be in individual stocks'}]},
+  {id:'fomo',cat:'Personal Finance',q:'Are you buying partly because of recent strong performance or social attention?',hint:'Buying after a stock has risen 50 to 100% because it keeps going up is one of the most reliable paths to losses. The risk was lower before the move. Fear Of Missing Out is a well-documented destroyer of retail returns.',opts:[
+    {val:'no',label:'No — I identified this independently; price action did not trigger my research',sub:'My thesis exists regardless of recent performance'},
+    {val:'somewhat',label:'Performance got my attention but I\'ve done independent research since',sub:''},
+    {val:'yes',label:'Yes — the stock going up is a significant part of my reason',sub:'The most honest answer many investors should give but rarely do'}]}
+];
+
+// ─── OPTIONS QUESTIONS ────────────────────────────────────────────────────────
+const OPT_Q = [
+  {id:'experience',cat:'Experience',q:'What is your level of options trading experience?',hint:'Options are significantly more complex than stocks. Losses can be total and fast. This changes the weight of every other answer.',opts:[
+    {val:'experienced',label:'Experienced — 2+ years, understand all Greeks',sub:'Comfortable with delta hedging, IV, assignment risk, and strategy selection'},
+    {val:'some',label:'Some experience — understand basics, done several trades',sub:'Know calls, puts, strikes, expiry, and have traded before'},
+    {val:'beginner',label:'Beginner — new to options or one of my first trades',sub:''}]},
+  {id:'direction',cat:'Directional Setup',q:'What is your directional conviction on the underlying stock?',hint:'Options require conviction on direction, magnitude, AND timing. Missing any one typically results in a loss even if the stock moves directionally in your favour.',opts:[
+    {val:'strong_bull',label:'Strongly bullish — high conviction in a significant upward move',sub:''},
+    {val:'mild_bull',label:'Mildly bullish — expecting a moderate rise',sub:'Mild conviction works poorly with options given premium costs'},
+    {val:'strong_bear',label:'Strongly bearish — high conviction in a significant downward move',sub:''},
+    {val:'mild_bear',label:'Mildly bearish — expecting a moderate decline',sub:''},
+    {val:'neutral',label:'Neutral — no clear directional view',sub:''}]},
+  {id:'magnitude',cat:'Directional Setup',q:'How large a move do you realistically expect?',hint:'Out-of-the-money options require substantial moves just to break even. An ATM call costing 3% of the stock price needs a 3% move just to reach zero P&L.',opts:[
+    {val:'large',label:'Large — 15% or more in my direction',sub:'Large moves justify the premium cost'},
+    {val:'moderate',label:'Moderate — 5 to 15% move expected',sub:'Workable but choose strike and expiry carefully'},
+    {val:'small',label:'Small — under 5% move expected',sub:'Small moves make it very hard to overcome premium paid'}]},
+  {id:'stock_research',cat:'Directional Setup',q:'Have you done serious research on the underlying stock?',hint:'Options amplify consequences. Going in with weak research on the underlying stock is doubly costly.',opts:[
+    {val:'thorough',label:'Thorough — researched company fundamentals or technical setup carefully',sub:''},
+    {val:'basic',label:'Basic — understand the general story',sub:''},
+    {val:'none',label:'Minimal — reacting to news, a tip, or general sentiment',sub:''}]},
+  {id:'why_options',cat:'Directional Setup',q:'Why are you using options rather than buying or shorting the stock?',hint:'Options are appropriate for leverage, defined downside, or views you cannot execute with stock. If your answer is "options are cheaper," you misunderstand them.',opts:[
+    {val:'leverage',label:'Leverage — amplified returns on a high-conviction directional bet',sub:'Understand that leverage works symmetrically — losses are amplified too'},
+    {val:'defined_risk',label:'Defined risk — I want capped downside exposure',sub:'Maximum loss is premium paid regardless of how far the stock falls'},
+    {val:'hedge',label:'Hedging — protecting an existing stock position I own',sub:''},
+    {val:'income',label:'Income — selling options on stock I own or cash I have set aside',sub:'Covered calls or cash-secured puts'},
+    {val:'cheaper',label:'I think options are cheaper than buying the stock',sub:''}]},
+  {id:'iv_check',cat:'Volatility & Pricing',q:'Have you checked the current Implied Volatility (IV) level?',hint:'IV is the price of options. High IV means expensive options. IV Rank (current IV vs 52-week range) tells you whether you are buying cheap or expensive insurance.',opts:[
+    {val:'checked_low',label:'Yes — IV is low relative to historical range (IV Rank below 30%)',sub:'Good time to buy options; relatively cheap'},
+    {val:'checked_mid',label:'Yes — IV is in the middle of its range (IV Rank 30 to 60%)',sub:'Neither particularly cheap nor expensive'},
+    {val:'checked_high',label:'Yes — IV is elevated (IV Rank above 60%)',sub:'Options are expensive; IV crush risk after any catalyst'},
+    {val:'not_checked',label:'I have not checked implied volatility',sub:''}]},
+  {id:'catalyst',cat:'Volatility & Pricing',q:'Is there a known catalyst event approaching?',hint:'Earnings, FDA decisions — all cause IV to inflate beforehand and collapse immediately after. Buying into these events means you need to exceed the already-priced-in magnitude.',opts:[
+    {val:'no_catalyst',label:'No specific catalyst — general directional thesis over time',sub:'Lower IV crush risk; thesis can develop gradually'},
+    {val:'catalyst_low_iv',label:'Yes, catalyst coming — and current IV is still relatively low',sub:'Potentially strong setup if right on direction'},
+    {val:'catalyst_high_iv',label:'Yes, catalyst approaching — and IV is already elevated',sub:'High IV crush risk: a correct directional move may still produce a loss'}]},
+  {id:'breakeven',cat:'Volatility & Pricing',q:'Have you calculated your exact break-even price at expiration?',hint:'Call break-even = strike + premium paid. Put break-even = strike minus premium paid. Many traders buy options without knowing how much the stock must move to reach zero P&L.',opts:[
+    {val:'yes',label:'Yes — I know exactly what price the stock needs to reach for me to profit',sub:'And I believe that move is realistically achievable'},
+    {val:'roughly',label:'Roughly — I have a general sense',sub:''},
+    {val:'no',label:'No — I have not calculated my break-even',sub:'This is a prerequisite; you cannot evaluate a trade without it'}]},
+  {id:'liquidity',cat:'Volatility & Pricing',q:'How is the liquidity of the specific options contract you are considering?',hint:'Low open interest and wide bid-ask spreads mean you lose money on entry and again on exit. On illiquid options, the spread alone can be 10 to 20% of the option\'s value.',opts:[
+    {val:'liquid',label:'High liquidity — tight bid-ask spread (under 5 cents), high open interest',sub:'Major ticker with an active options market'},
+    {val:'moderate',label:'Moderate liquidity — spreads are a few percent of option value',sub:''},
+    {val:'illiquid',label:'Low liquidity — wide spreads or low open interest',sub:'Transaction costs alone will significantly erode returns'},
+    {val:'unknown',label:'I have not checked liquidity',sub:''}]},
+  {id:'timing_confidence',cat:'Timing',q:'How confident are you about the timing of the expected move?',hint:'Directional correctness without timing precision is a loss in options. If right about direction but the move comes after expiry, you lose everything.',opts:[
+    {val:'high',label:'High — I expect the move within the next 2 to 4 weeks with a specific reason',sub:'Clear catalyst or technical setup with a defined near-term trigger'},
+    {val:'medium',label:'Medium — I think the move happens within 2 to 3 months',sub:'Reasonable confidence but not pinned to a specific event'},
+    {val:'low',label:'Low — I believe it will eventually happen but am not sure when',sub:'The most common timing mistake: right but running out of time'}]},
+  {id:'expiry_choice',cat:'Timing',q:'How much time are you planning to buy?',hint:'Buying too little time is the single most common beginner mistake. Most professionals recommend 2 to 3x as much time as they think they need.',opts:[
+    {val:'generous',label:'Generous — 60 or more days to expiration',sub:'Theta decay is manageable; ample room for timing imprecision'},
+    {val:'adequate',label:'Adequate — 30 to 60 days',sub:'Reasonable but leaves little room for being early'},
+    {val:'tight',label:'Short — under 30 days',sub:'Theta is working aggressively against you'},
+    {val:'weekly',label:'Weekly options — under 7 days',sub:'Extremely high total-loss probability'}]},
+  {id:'theta_aware',cat:'Timing',q:'Do you know how much your option loses each day from time decay (theta)?',hint:'An ATM option with 30 days left might lose 2 to 4% of its value per day from theta alone, even if the stock does not move. This accelerates sharply in the final 2 weeks.',opts:[
+    {val:'yes',label:'Yes — I know my approximate daily theta cost and it is in my plan',sub:''},
+    {val:'aware',label:'I understand theta exists but have not quantified my daily cost',sub:''},
+    {val:'no',label:'I was not fully aware that options lose value daily even if the stock is flat',sub:''}]},
+  {id:'position_size',cat:'Risk Management',q:'What percentage of your total portfolio will this options position represent?',hint:'Even experienced options traders rarely exceed 2 to 5% in a single speculative long options position. You can lose 100% of what you put in.',opts:[
+    {val:'small',label:'Under 1% of total portfolio',sub:'Conservative and appropriate for speculative options'},
+    {val:'moderate',label:'1 to 3% of portfolio',sub:'Acceptable for experienced traders with genuine high conviction'},
+    {val:'large',label:'3 to 7% of portfolio',sub:'Elevated risk; a total loss would be meaningful'},
+    {val:'very_large',label:'Over 7% in this single position',sub:'Very high concentration in a volatile, expiring instrument'}]},
+  {id:'strategy_type',cat:'Risk Management',q:'What options strategy are you considering?',hint:'Strategy choice determines your risk profile. Spreads reduce cost and IV exposure but cap upside. Naked shorts can create very large losses.',opts:[
+    {val:'long_single',label:'Buying a single call or put (naked long)',sub:'Simple; max loss is premium paid; unlimited upside for calls'},
+    {val:'spread',label:'Vertical debit spread — buy one, sell a further OTM option',sub:'Reduces cost and IV exposure; caps max gain — good risk-adjusted choice'},
+    {val:'other_defined',label:'Other defined-risk strategy (iron condor, calendar, butterfly)',sub:'You understand the max loss clearly and it is precisely defined'},
+    {val:'naked_short',label:'Selling naked options without owning the underlying',sub:'Potential for very large losses beyond premium received'}]},
+  {id:'total_loss',cat:'Risk Management',q:'Can you afford to lose 100% of the premium you are paying?',hint:'Not rhetorical. Studies show 70 to 80% of retail-bought options expire worthless. Your maximum loss on a long option is exactly what you paid.',opts:[
+    {val:'yes',label:'Yes — this money is mentally written off as at-risk before I trade',sub:'A total loss is painful but survivable'},
+    {val:'painful',label:'A full loss would be significant but would not affect my life materially',sub:''},
+    {val:'no',label:'No — I am expecting this to work and a total loss would be a real problem',sub:''}]},
+  {id:'profit_exit',cat:'Exit Planning',q:'Have you defined your profit-taking target before entering?',hint:'Define exits before you enter — not in the heat of the moment when a trade is moving in your favour.',opts:[
+    {val:'yes',label:'Yes — I have a specific % gain or price target, and I will sell the contract',sub:'I know to sell the contract rather than exercise it to capture time value'},
+    {val:'roughly',label:'Roughly — I will sell when it feels right',sub:'Emotional exits often leave money on the table or hold too long'},
+    {val:'no',label:'No — I will see how it develops',sub:''}]},
+  {id:'loss_exit',cat:'Exit Planning',q:'Have you defined the point at which you will close a losing position?',hint:'Most traders plan profit exits but neglect loss exits, then ride options to zero. Common approach: cut the position at 40 to 50% loss.',opts:[
+    {val:'yes',label:'Yes — I will close if it loses 40 to 50% of its value',sub:'Preserving remaining capital to deploy in a better setup'},
+    {val:'partial',label:'I will reassess if bad but no specific level defined',sub:''},
+    {val:'no',label:'No — I will hold to expiry and see what happens',sub:'How most losing options positions reach zero'}]},
+  {id:'sell_not_exercise',cat:'Exit Planning',q:'Do you understand that selling the contract is almost always better than exercising it early?',hint:'Selling captures intrinsic value PLUS remaining time value. Exercising early gives up time value for free. Only exercise near expiration when time value has essentially decayed to zero.',opts:[
+    {val:'yes',label:'Yes — I will always sell the contract to close unless expiring imminently',sub:''},
+    {val:'learned',label:'I did not know this but now understand why',sub:'Important insight that changes how I will manage the position'},
+    {val:'no',label:'I was planning to exercise if it went my way',sub:''}]}
+];
+
+// ─── FMP DATA FETCHING & ANALYSIS ─────────────────────────────────────────────
+async function fetchFMP(ticker, apiKey) {
+  const t = ticker.toUpperCase().trim();
+  const k = apiKey.trim();
+
+  // Alpha Vantage: fetch overview + income + cash flow + balance sheet
+  async function avFetch(params) {
+    const url = AV_BASE + '?' + new URLSearchParams({...params, symbol: t, apikey: k}).toString();
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data['Note']) throw new Error('rate_limit');
+      if (data['Information']) throw new Error('invalid_key');
+      return data;
+    } catch(e) {
+      if (e.message === 'rate_limit') throw new Error('Alpha Vantage rate limit hit (25/day on free tier). Wait until tomorrow or upgrade at alphavantage.co');
+      if (e.message === 'invalid_key') throw new Error('API key rejected by Alpha Vantage. Make sure you copied the full key from alphavantage.co/support/#api-key');
+      if (e.message.includes('fetch')) throw new Error('Network blocked. Try serving the file over HTTP instead of opening directly from your desktop.');
+      throw e;
+    }
+  }
+
+  // Fetch overview first to validate key + ticker
+  const overview = await avFetch({ function: 'OVERVIEW' });
+  if (!overview || !overview.Symbol) {
+    throw new Error(`Ticker "${t}" not found or API key invalid. Check both and try again. Get a free key at alphavantage.co/support/#api-key`);
+  }
+
+  // Fetch financials (each costs 1 of your 25 daily requests)
+  const [income, cashflow, balance] = await Promise.all([
+    avFetch({ function: 'INCOME_STATEMENT' }),
+    avFetch({ function: 'CASH_FLOW' }),
+    avFetch({ function: 'BALANCE_SHEET' }),
+  ]);
+
+  return { overview, income, cashflow, balance };
+}
+
+function analyzeFMPData(data) {
+  const { overview, income, cashflow, balance } = data;
+  const prefill = {};
+  const evidence = {};
+  const metrics = {};
+
+  // Helper: get annual reports array from AV response
+  const annualIncome = income?.annualReports || [];
+  const annualCash = cashflow?.annualReports || [];
+  const annualBalance = balance?.annualReports || [];
+
+  function num(val) { return val && val !== 'None' ? parseFloat(val) : null; }
+
+  // ── Revenue trend ──
+  if (annualIncome.length >= 3) {
+    const revs = annualIncome.slice(0, 4).map(y => num(y.totalRevenue)).filter(v => v != null);
+    if (revs.length >= 3) {
+      const g1 = revs[1] ? (revs[0] - revs[1]) / Math.abs(revs[1]) : null;
+      const g2 = revs[2] ? (revs[1] - revs[2]) / Math.abs(revs[2]) : null;
+      evidence.revenue_trend = `Revenue: ${fmtB(revs[2])} → ${fmtB(revs[1])} → ${fmtB(revs[0])} | YoY: ${pct(g2)} → ${pct(g1)}`;
+      metrics.revenueGrowth = [g1, g2];
+      if (g1 != null && g2 != null && g1 > g2 && g1 > 0.05) prefill.revenue_trend = 'accelerating';
+      else if (g1 != null && g1 >= 0.08) prefill.revenue_trend = 'steady';
+      else if (g1 != null && g2 != null && g1 < g2 && g1 > 0) prefill.revenue_trend = 'slowing';
+      else if (g1 != null && g1 <= 0) prefill.revenue_trend = 'flat';
+      else prefill.revenue_trend = 'slowing';
+    }
+  }
+
+  // ── Gross margins ──
+  if (annualIncome.length >= 2) {
+    const marginData = annualIncome.slice(0, 3).map(y => {
+      const gp = num(y.grossProfit), rev = num(y.totalRevenue);
+      return gp != null && rev != null && rev > 0 ? gp / rev : null;
+    }).filter(v => v != null);
+    if (marginData.length >= 2) {
+      const latest = marginData[0];
+      const trend = marginData[0] - marginData[marginData.length - 1];
+      evidence.margins = `Gross margin: ${pct(marginData[marginData.length-1])} → ${pct(marginData[1]||marginData[0])} → ${pct(latest)} (${trend > 0 ? '+' : ''}${pct(trend)} trend)`;
+      metrics.grossMargin = latest;
+      if (trend < -0.02) prefill.margins = 'declining';
+      else if (latest >= 0.40) prefill.margins = 'high_stable';
+      else if (latest >= 0.15) prefill.margins = 'moderate';
+      else prefill.margins = 'low';
+    }
+  }
+
+  // ── Free cash flow ──
+  if (annualCash.length >= 2) {
+    const fcfs = annualCash.slice(0, 3).map(y => {
+      const ocf = num(y.operatingCashflow), capex = num(y.capitalExpenditures);
+      return ocf != null ? ocf - Math.abs(capex || 0) : null;
+    }).filter(v => v != null);
+    if (fcfs.length >= 1) {
+      metrics.fcf = fcfs[0];
+      metrics.fcfGrowth = fcfs.length >= 2 && fcfs[0] > fcfs[1];
+      evidence.cashflow = `FCF: ${fmtB(fcfs[2]||fcfs[1]||0)} → ${fmtB(fcfs[1]||fcfs[0]||0)} → ${fmtB(fcfs[0])}`;
+      if (fcfs[0] > 0 && metrics.fcfGrowth) prefill.cashflow = 'strong';
+      else if (fcfs[0] > 0) prefill.cashflow = 'positive';
+      else prefill.cashflow = 'burning';
+    }
+  }
+
+  // ── ROIC (approximated: EBIT*(1-tax) / (total assets - current liabilities)) ──
+  if (annualIncome.length >= 1 && annualBalance.length >= 1) {
+    const ebit = num(annualIncome[0].ebit) || num(annualIncome[0].operatingIncome);
+    const taxRate = (() => {
+      const pre = num(annualIncome[0].incomeBeforeTax);
+      const tax = num(annualIncome[0].incomeTaxExpense);
+      return pre && pre > 0 && tax != null ? Math.min(tax / pre, 0.4) : 0.21;
+    })();
+    const totalAssets = num(annualBalance[0].totalAssets);
+    const currentLiab = num(annualBalance[0].totalCurrentLiabilities);
+    if (ebit != null && totalAssets != null) {
+      const investedCapital = totalAssets - (currentLiab || 0);
+      const roic = investedCapital > 0 ? (ebit * (1 - taxRate)) / investedCapital : null;
+      if (roic != null) {
+        metrics.roic = roic;
+        evidence.roic = `EBIT: ${fmtB(ebit)} | Invested capital: ${fmtB(investedCapital)} | Est. ROIC: ${pct(roic)}`;
+        if (roic >= 0.20) prefill.roic = 'excellent';
+        else if (roic >= 0.12) prefill.roic = 'good';
+        else if (roic >= 0.06) prefill.roic = 'average';
+        else prefill.roic = 'poor';
+      }
+    }
+  }
+
+  // ── Debt / leverage ──
+  if (annualBalance.length >= 1 && annualIncome.length >= 1) {
+    const longTermDebt = num(annualBalance[0].longTermDebt) || 0;
+    const currentLTDebt = num(annualBalance[0].currentLongTermDebt) || 0;
+    const totalDebt = longTermDebt + currentLTDebt;
+    const cash = num(annualBalance[0].cashAndShortTermInvestments) || num(annualBalance[0].cashAndCashEquivalentsAtCarryingValue) || 0;
+    const netDebt = totalDebt - cash;
+    const ebitda = num(annualIncome[0].ebitda);
+    metrics.netDebt = netDebt;
+    if (ebitda && ebitda > 0) {
+      const ratio = netDebt / ebitda;
+      metrics.ndEbitda = ratio;
+      evidence.debt = `Net debt: ${fmtB(netDebt)} | EBITDA: ${fmtB(ebitda)} | Ratio: ${ratio.toFixed(1)}x`;
+      if (netDebt <= 0) prefill.debt = 'net_cash';
+      else if (ratio < 2) prefill.debt = 'low';
+      else if (ratio < 3.5) prefill.debt = 'moderate';
+      else prefill.debt = 'high';
+    } else if (netDebt <= 0) {
+      prefill.debt = 'net_cash';
+      evidence.debt = `Net cash position: ${fmtB(Math.abs(netDebt))}`;
+    }
+  }
+
+  // ── Interest coverage ──
+  if (annualIncome.length >= 1) {
+    const ebit = num(annualIncome[0].ebit) || num(annualIncome[0].operatingIncome);
+    const interest = Math.abs(num(annualIncome[0].interestExpense) || 0);
+    if (interest === 0) {
+      prefill.interest_coverage = 'na';
+      evidence.interest_coverage = 'No material interest expense';
+    } else if (ebit != null) {
+      const ratio = ebit / interest;
+      metrics.interestCoverage = ratio;
+      evidence.interest_coverage = `EBIT: ${fmtB(ebit)} | Interest: ${fmtB(interest)} | Coverage: ${ratio.toFixed(1)}x`;
+      if (ratio >= 5) prefill.interest_coverage = 'strong';
+      else if (ratio >= 2) prefill.interest_coverage = 'adequate';
+      else prefill.interest_coverage = 'weak';
+    }
+  }
+
+  // ── Accounting quality (FCF vs net income) ──
+  if (annualIncome.length >= 2 && annualCash.length >= 2) {
+    const nis = annualIncome.slice(0,3).map(y => num(y.netIncome)).filter(v => v != null);
+    const fcfs2 = annualCash.slice(0,3).map(y => {
+      const ocf = num(y.operatingCashflow), capex = num(y.capitalExpenditures);
+      return ocf != null ? ocf - Math.abs(capex || 0) : null;
+    }).filter(v => v != null);
+    if (nis.length >= 2 && fcfs2.length >= 2) {
+      const avgNI = nis.reduce((a,b)=>a+b,0)/nis.length;
+      const avgFCF = fcfs2.reduce((a,b)=>a+b,0)/fcfs2.length;
+      const conv = avgNI !== 0 ? avgFCF / avgNI : 1;
+      metrics.earningsConversion = conv;
+      evidence.accounting_quality = `Avg net income: ${fmtB(avgNI)} | Avg FCF: ${fmtB(avgFCF)} | FCF/Earnings: ${(conv*100).toFixed(0)}%`;
+      if (conv >= 0.85) prefill.accounting_quality = 'clean';
+      else if (conv >= 0.60) prefill.accounting_quality = 'minor';
+      else prefill.accounting_quality = 'concerns';
+    }
+  }
+
+  // ── Historical P/E from overview ──
+  if (overview) {
+    const pe = num(overview.PERatio);
+    const fwdPE = num(overview.ForwardPE);
+    const bookVal = num(overview.BookValue);
+    const price = num(overview.AnalystTargetPrice);
+    metrics.currentPE = pe;
+    if (pe != null) {
+      // AV doesn't give historical P/E directly; use sector P/E if available
+      const sector52wHigh = num(overview['52WeekHigh']);
+      const sector52wLow = num(overview['52WeekLow']);
+      // Estimate: if price near 52wk high → above avg; near low → below avg
+      const currentPrice = num(overview.AnalystTargetPrice) || ((sector52wHigh||0) + (sector52wLow||0)) / 2;
+      if (sector52wHigh && sector52wLow) {
+        const range = sector52wHigh - sector52wLow;
+        const pos = range > 0 ? ((currentPrice||sector52wHigh) - sector52wLow) / range : 0.5;
+        evidence.val_history = `P/E: ${pe?.toFixed(1)}x | Fwd P/E: ${fwdPE?.toFixed(1)||'N/A'}x | 52wk range position: ${(pos*100).toFixed(0)}%`;
+        metrics.historicalPE = pe;
+        if (pos < 0.3) prefill.val_history = 'low';
+        else if (pos > 0.75) prefill.val_history = 'high';
+        else prefill.val_history = 'average';
+      }
+    }
+  }
+
+  const summary = {
+    name: overview?.Name || overview?.Symbol || '',
+    sector: overview?.Sector || 'Unknown',
+    mktCap: num(overview?.MarketCapitalization),
+    price: num(overview?.['200DayMovingAverage']),
+    pe: num(overview?.PERatio),
+    metrics
+  };
+
+  return { prefill, evidence, summary };
+}
+
+function fmtB(n) {
+  if (!n && n !== 0) return 'N/A';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 1e12) return sign + '$' + (abs/1e12).toFixed(1) + 'T';
+  if (abs >= 1e9) return sign + '$' + (abs/1e9).toFixed(1) + 'B';
+  if (abs >= 1e6) return sign + '$' + (abs/1e6).toFixed(1) + 'M';
+  return sign + '$' + abs.toFixed(0);
+}
+function pct(n) { return n != null ? (n*100).toFixed(1)+'%' : 'N/A'; }
+function metricColor(key, metrics) {
+  if (key === 'roic') return metrics.roic >= 0.20 ? 'good' : metrics.roic >= 0.12 ? 'neutral' : metrics.roic < 0.06 ? 'bad' : 'warn';
+  if (key === 'fcf') return metrics.fcf > 0 ? (metrics.fcfGrowth ? 'good' : 'neutral') : 'bad';
+  if (key === 'ndEbitda') return metrics.ndEbitda <= 0 ? 'good' : metrics.ndEbitda < 2 ? 'good' : metrics.ndEbitda < 3.5 ? 'warn' : 'bad';
+  if (key === 'grossMargin') return metrics.grossMargin >= 0.4 ? 'good' : metrics.grossMargin >= 0.15 ? 'neutral' : 'bad';
+  if (key === 'interestCoverage') return metrics.interestCoverage >= 5 ? 'good' : metrics.interestCoverage >= 2 ? 'warn' : 'bad';
+  if (key === 'earningsConversion') return metrics.earningsConversion >= 0.85 ? 'good' : metrics.earningsConversion >= 0.60 ? 'warn' : 'bad';
+  return 'neutral';
+}
+
+// ─── SCORING (same as before) ─────────────────────────────────────────────────
+function scoreStocks(a) {
+  const flags=[],dims={preparation:0,quality:0,financial:0,valuation:0,risk:0,personal:0};
+  const dmax={preparation:12,quality:16,financial:14,valuation:12,risk:10,personal:14};
+
+  if(a.afford_loss==='no') return hardStop('Cannot afford to lose this capital','You indicated this is not genuinely discretionary capital. No investment thesis justifies putting essential savings or near-term funds into individual stocks. Protect this money in a high-yield savings account or short-duration government bonds.',a,dims,dmax);
+  if(a.fomo==='yes'&&a.research_depth==='none') return hardStop('FOMO-driven purchase with zero research','You are buying because the stock is going up, without examining the business. This is the most reliable formula for losing money. Step back, spend at minimum 4 hours reading the last two annual reports.',a,dims,dmax);
+  if(a.cashflow==='burning'&&a.val_peers==='expensive'&&a.margin_safety==='none') return hardStop('Burning cash + expensive + no margin of safety','Pre-profitability companies at rich valuations with no valuation buffer require perfect execution. There is no room for error and asymmetric downside risk.',a,dims,dmax);
+
+  if(a.thesis==='clear'){dims.preparation+=3;flags.push({t:'green',s:'Clear and specific investment thesis'});}else if(a.thesis==='vague')dims.preparation+=1;else flags.push({t:'red',s:'No thesis — speculating not investing'});
+  if(a.contrarian==='contrarian'){dims.preparation+=2;flags.push({t:'green',s:'Contrarian view — potential mispricing edge'});}else if(a.contrarian==='consensus')flags.push({t:'amber',s:'Consensus view likely already priced in'});
+  if(a.bear_case==='yes'){dims.preparation+=2;flags.push({t:'green',s:'Bear case understood and addressed'});}else if(a.bear_case==='no'){dims.preparation-=1;flags.push({t:'red',s:'Bear case not considered'});}
+  if(a.research_depth==='deep'){dims.preparation+=3;flags.push({t:'green',s:'Deep primary-source research'});}else if(a.research_depth==='medium')dims.preparation+=1;else if(a.research_depth==='none'){dims.preparation-=2;flags.push({t:'red',s:'No financial research done'});}
+  if(a.exit_plan==='yes'){dims.preparation+=2;flags.push({t:'green',s:'Exit criteria defined in advance'});}else if(a.exit_plan==='no')flags.push({t:'amber',s:'No exit plan defined'});
+
+  if(a.moat==='strong'){dims.quality+=3;flags.push({t:'green',s:'Wide competitive moat'});}else if(a.moat==='narrow')dims.quality+=1;else if(a.moat==='none'){dims.quality-=1;flags.push({t:'amber',s:'No moat — margins at risk'});}else flags.push({t:'amber',s:'Moat not assessed'});
+  if(a.moat_trend==='widening'){dims.quality+=2;flags.push({t:'green',s:'Moat is widening'});}else if(a.moat_trend==='narrowing'){dims.quality-=2;flags.push({t:'red',s:'Moat narrowing — competitive erosion'});}
+  if(a.revenue_trend==='accelerating'){dims.quality+=2;flags.push({t:'green',s:'Accelerating revenue growth'});}else if(a.revenue_trend==='steady')dims.quality+=1;else if(a.revenue_trend==='slowing'){dims.quality-=1;flags.push({t:'amber',s:'Revenue growth decelerating'});}else if(a.revenue_trend==='flat'){dims.quality-=2;flags.push({t:'red',s:'Flat or declining revenue'});}
+  if(a.margins==='high_stable'){dims.quality+=2;flags.push({t:'green',s:'High stable margins'});}else if(a.margins==='declining'){dims.quality-=2;flags.push({t:'red',s:'Declining margins — critical warning'});}
+  if(a.customer_conc==='concentrated'){dims.quality-=1;flags.push({t:'amber',s:'Customer concentration above 20%'});}else if(a.customer_conc==='diversified')dims.quality+=1;
+  if(a.management==='excellent'){dims.quality+=3;flags.push({t:'green',s:'Excellent management team'});}else if(a.management==='good')dims.quality+=1;else if(a.management==='poor'){dims.quality-=2;flags.push({t:'red',s:'Poor management track record'});}else flags.push({t:'amber',s:'Management not assessed'});
+  if(a.insider_activity==='buying'){dims.quality+=3;flags.push({t:'green',s:'Insiders buying — strong alignment'});}else if(a.insider_activity==='selling')flags.push({t:'amber',s:'Significant insider selling'});
+
+  if(a.cashflow==='strong'){dims.financial+=3;flags.push({t:'green',s:'Strong growing free cash flow'});}else if(a.cashflow==='positive')dims.financial+=1;else if(a.cashflow==='burning'){dims.financial-=1;flags.push({t:'amber',s:'Negative FCF — burning cash'});}else flags.push({t:'amber',s:'Cash flow not examined'});
+  if(a.roic==='excellent'){dims.financial+=3;flags.push({t:'green',s:'ROIC above 20% — exceptional efficiency'});}else if(a.roic==='good')dims.financial+=2;else if(a.roic==='poor'){dims.financial-=2;flags.push({t:'red',s:'Poor ROIC — destroying capital'});}else if(a.roic==='unknown')flags.push({t:'amber',s:'ROIC not calculated'});
+  if(a.debt==='net_cash'){dims.financial+=2;flags.push({t:'green',s:'Net cash balance sheet'});}else if(a.debt==='low')dims.financial+=1;else if(a.debt==='high'){dims.financial-=2;flags.push({t:'red',s:'High leverage — vulnerable in downturns'});}else if(a.debt==='unknown')flags.push({t:'amber',s:'Balance sheet not examined'});
+  if(a.interest_coverage==='strong')dims.financial+=1;else if(a.interest_coverage==='weak'){dims.financial-=2;flags.push({t:'red',s:'Weak interest coverage'});}
+  if(a.accounting_quality==='clean'){dims.financial+=3;flags.push({t:'green',s:'High earnings quality'});}else if(a.accounting_quality==='concerns'){dims.financial-=2;flags.push({t:'red',s:'Accounting red flags identified'});}
+
+  if(a.val_peers==='discount'){dims.valuation+=3;flags.push({t:'green',s:'Discount to peers with known reason'});}else if(a.val_peers==='fair')dims.valuation+=1;else if(a.val_peers==='expensive'){dims.valuation-=2;flags.push({t:'red',s:'Expensive vs peers'});}else flags.push({t:'amber',s:'Peer valuation not compared'});
+  if(a.val_history==='low'){dims.valuation+=2;flags.push({t:'green',s:'Below own historical average multiple'});}else if(a.val_history==='high'){dims.valuation-=1;flags.push({t:'amber',s:'Above historical average multiple'});}else if(a.val_history==='unknown')flags.push({t:'amber',s:'Historical multiples not checked'});
+  if(a.margin_safety==='large'){dims.valuation+=3;flags.push({t:'green',s:'Large margin of safety'});}else if(a.margin_safety==='none'){dims.valuation-=2;flags.push({t:'red',s:'No margin of safety'});}else if(a.margin_safety==='unknown')flags.push({t:'amber',s:'Intrinsic value not estimated'});
+  if(a.growth_priced==='conservative'){dims.valuation+=2;flags.push({t:'green',s:'Conservative growth priced in'});}else if(a.growth_priced==='aggressive'){dims.valuation-=2;flags.push({t:'amber',s:'Aggressive growth priced in'});}
+
+  if(a.sector==='strong_growth'){dims.risk+=3;flags.push({t:'green',s:'Strong secular tailwinds'});}else if(a.sector==='declining'){dims.risk-=3;flags.push({t:'red',s:'Structurally declining sector'});}
+  if(a.regulatory==='high'){dims.risk-=2;flags.push({t:'red',s:'High regulatory risk'});}else if(a.regulatory==='low')dims.risk+=1;
+  if(a.macro_sensitivity==='defensive')dims.risk+=1;else if(a.macro_sensitivity==='cyclical')flags.push({t:'amber',s:'Highly cyclical — amplified recession risk'});
+  if(a.geopolitical==='high'){dims.risk-=2;flags.push({t:'red',s:'Significant geopolitical risk'});}else if(a.geopolitical==='low')dims.risk+=1;
+
+  if(a.horizon==='very_long'){dims.personal+=4;flags.push({t:'green',s:'Very long time horizon'});}else if(a.horizon==='long')dims.personal+=3;else if(a.horizon==='medium')dims.personal+=1;else{dims.personal-=2;flags.push({t:'red',s:'Short horizon — timing risk dominates'});}
+  if(a.position_size==='small')dims.personal+=2;else if(a.position_size==='moderate')dims.personal+=1;else if(a.position_size==='very_large'){dims.personal-=2;flags.push({t:'red',s:'Very high concentration'});}
+  if(a.afford_loss==='yes')dims.personal+=2;
+  if(a.fomo==='yes'){dims.personal-=3;flags.push({t:'red',s:'FOMO-driven purchase'});}else if(a.fomo==='no'){dims.personal+=2;flags.push({t:'green',s:'Not FOMO-driven — independent thesis'});}
+
+  Object.keys(dims).forEach(k=>{dims[k]=Math.max(0,Math.min(dmax[k],dims[k]));});
+  const totalMax=Object.values(dmax).reduce((a,b)=>a+b,0);
+  const totalScore=Object.values(dims).reduce((a,b)=>a+b,0);
+  const pct2=totalScore/totalMax;
+  const topGreen=flags.filter(f=>f.t==='green')[0]?.s||'Some positive factors';
+
+  let type,verdict,title,body,stats;
+  if(pct2>=0.72){type='buy';verdict='Strong conviction setup';title='Compelling case to invest';body='Your analysis across preparation, business quality, financials, valuation, and personal fit is strong. Multiple factors align. The discipline now is position sizing and holding to your pre-defined exits — not letting short-term volatility shake you out of a well-researched thesis.';stats=[{l:'Decision',v:'Invest'},{l:'Conviction',v:Math.round(pct2*100)+'%'},{l:'Position size',v:a.position_size==='very_large'?'Reduce — max 10% portfolio':'Per your risk plan'},{l:'Key strength',v:topGreen}];}
+  else if(pct2>=0.55){type='lean-buy';verdict='Cautiously positive';title='Lean invest — half position';body='More positives than negatives, but meaningful gaps remain. Consider a half-position now with a plan to add if your remaining questions resolve favourably. Dollar-cost averaging over 2 to 3 months reduces timing risk.';stats=[{l:'Decision',v:'Half position'},{l:'Conviction',v:Math.round(pct2*100)+'%'},{l:'Strategy',v:'DCA over 2–3 months'},{l:'Action',v:'Fill remaining knowledge gaps'}];}
+  else if(pct2>=0.40){type='caution';verdict='Too many gaps';title='Wait or do more research';body='The investment has some merit but too many unknowns and warning signals exist to invest with genuine conviction. Either resolve them through research or wait for a setup where the risk-reward is clearer. Patience compounds too.';stats=[{l:'Decision',v:'Wait'},{l:'Conviction',v:Math.round(pct2*100)+'%'},{l:'Action',v:'Fill research gaps first'},{l:'Size if buying',v:'1–2% maximum'}];}
+  else if(pct2>=0.25){type='research';verdict='Insufficient analysis';title='Do the research first';body='Too many fundamental questions are unanswered. The gaps you have identified represent genuine risks that cannot be dismissed. Spend 4 to 6 hours on primary source research before making any decision.';stats=[{l:'Decision',v:'Not yet'},{l:'Score',v:Math.round(pct2*100)+'%'},{l:'Time needed',v:'4–6 hours research'},{l:'Start with',v:'Last two annual reports'}];}
+  else{type='avoid';verdict='Do not invest';title='Pass on this investment';body='Multiple significant red flags stack against this investment. Business quality, financial health, valuation, risk profile, or your personal circumstances make this position inadvisable. Passing is always valid — preserved capital is available for a better setup.';stats=[{l:'Decision',v:'Pass'},{l:'Score',v:Math.round(pct2*100)+'%'},{l:'Key issues',v:'Multiple compounding red flags'},{l:'Next step',v:'Wait for a cleaner setup'}];}
+  return{type,verdict,title,body,stats,dims,dimMax:dmax,flags:flags.slice(0,9),answers:a};
+}
+
+function hardStop(title,body,a,dims,dmax){return{type:'hard-stop',verdict:'Hard stop',title,body,stats:[{l:'Decision',v:'Do not invest'},{l:'Override',v:'None'},{l:'Priority',v:'Capital preservation'},{l:'Revisit',v:'When situation changes'}],dims,dimMax:dmax,flags:[{t:'red',s:title}],answers:a};}
+
+function scoreOptions(a){
+  const flags=[],dims={directional:0,volatility:0,timing:0,risk:0,process:0};
+  const dmax={directional:12,volatility:12,timing:12,risk:12,process:12};
+
+  if(a.direction==='neutral')return optStop('No directional view','Options require conviction on direction, magnitude, AND timing. Without a clear view, theta destroys your position regardless of market direction. Neutral traders sell options — they do not buy them.',a,dims,dmax);
+  if(a.total_loss==='no')return optStop('Cannot absorb a 100% loss','Options frequently expire worthless. If a complete loss would materially hurt you, this instrument is mis-sized. Reduce position dramatically or buy the underlying stock instead.',a,dims,dmax);
+  if(a.strategy_type==='naked_short'&&a.experience==='beginner')return optStop('Naked short options as a beginner','Selling naked options creates theoretically unlimited loss potential and requires deep understanding of margin mechanics and assignment risk. Not an appropriate starting strategy.',a,dims,dmax);
+  if(a.expiry_choice==='weekly'&&a.experience==='beginner')return optStop('Weekly options as a beginner','Weekly options have theta decay so aggressive they lose value even on favourable days. Learn with 60-day+ options first.',a,dims,dmax);
+  if(a.why_options==='cheaper')return optStop('Misunderstanding of options pricing','You indicated options seem cheaper than buying the stock. This reflects a fundamental misunderstanding. Options cost less in absolute terms but give you a fraction of the economics with an expiration date.',a,dims,dmax);
+
+  const isBull=['strong_bull','mild_bull'].includes(a.direction);
+  const isStrong=['strong_bull','strong_bear'].includes(a.direction);
+
+  if(isStrong){dims.directional+=4;flags.push({t:'green',s:'Strong directional conviction'});}else{dims.directional+=1;flags.push({t:'amber',s:'Mild conviction — premium makes break-even harder'});}
+  if(a.magnitude==='large'){dims.directional+=4;flags.push({t:'green',s:'Large expected move — leverage appropriate'});}else if(a.magnitude==='small'){dims.directional-=2;flags.push({t:'red',s:'Small expected move — premium makes profit unlikely'});}else dims.directional+=1;
+  if(a.stock_research==='thorough'){dims.directional+=3;flags.push({t:'green',s:'Thorough research on underlying'});}else if(a.stock_research==='none'){dims.directional-=2;flags.push({t:'red',s:'No research on underlying stock'});}
+  if(a.why_options==='hedge'){dims.directional+=2;flags.push({t:'green',s:'Hedging — asymmetric downside protection'});}
+
+  if(a.iv_check==='checked_low'){dims.volatility+=4;flags.push({t:'green',s:'IV is low — good time to buy'});}else if(a.iv_check==='checked_mid')dims.volatility+=2;else if(a.iv_check==='checked_high'){dims.volatility-=2;flags.push({t:'red',s:'High IV — IV crush risk'});}else flags.push({t:'amber',s:'IV not checked'});
+  if(a.catalyst==='no_catalyst')dims.volatility+=2;else if(a.catalyst==='catalyst_low_iv'){dims.volatility+=2;flags.push({t:'green',s:'Catalyst approaching with low IV'});}else if(a.catalyst==='catalyst_high_iv'){dims.volatility-=3;flags.push({t:'red',s:'High IV into catalyst — severe IV crush risk'});}
+  if(a.breakeven==='yes'){dims.volatility+=3;flags.push({t:'green',s:'Break-even calculated and achievable'});}else if(a.breakeven==='no'){dims.volatility-=2;flags.push({t:'red',s:'Break-even not calculated'});}
+  if(a.liquidity==='liquid'){dims.volatility+=3;flags.push({t:'green',s:'Liquid market — tight spreads'});}else if(a.liquidity==='illiquid'){dims.volatility-=2;flags.push({t:'red',s:'Illiquid options — wide spreads erode returns'});}
+
+  if(a.timing_confidence==='high'){dims.timing+=4;flags.push({t:'green',s:'High timing confidence'});}else if(a.timing_confidence==='low'){dims.timing-=2;flags.push({t:'red',s:'Low timing confidence — theta will erode'});}else dims.timing+=1;
+  if(a.expiry_choice==='generous'){dims.timing+=4;flags.push({t:'green',s:'Generous time purchased — theta manageable'});}else if(a.expiry_choice==='adequate')dims.timing+=2;else if(a.expiry_choice==='tight'){dims.timing-=1;flags.push({t:'amber',s:'Short expiry — theta accelerating'});}else if(a.expiry_choice==='weekly'){dims.timing-=3;flags.push({t:'red',s:'Weekly options — extreme decay'});}
+  if(a.theta_aware==='yes'){dims.timing+=4;flags.push({t:'green',s:'Daily theta cost understood'});}else if(a.theta_aware==='no'){dims.timing-=2;flags.push({t:'red',s:'Daily theta decay not understood'});}
+
+  if(a.position_size==='small'){dims.risk+=4;flags.push({t:'green',s:'Conservative position size (<1%)'});}else if(a.position_size==='moderate')dims.risk+=2;else if(a.position_size==='large'){dims.risk-=1;flags.push({t:'amber',s:'Elevated position size'});}else{dims.risk-=2;flags.push({t:'red',s:'Very large options position'});}
+  if(a.strategy_type==='spread'){dims.risk+=4;flags.push({t:'green',s:'Spread reduces IV exposure and cost'});}else if(a.strategy_type==='long_single')dims.risk+=2;else if(a.strategy_type==='other_defined')dims.risk+=3;
+  if(a.total_loss==='yes')dims.risk+=2;
+  if(a.why_options==='hedge'){dims.risk+=2;flags.push({t:'green',s:'Hedge — intentional asymmetric risk'});}
+
+  if(a.profit_exit==='yes'){dims.process+=3;flags.push({t:'green',s:'Profit target defined — will sell contract'});}else if(a.profit_exit==='no')flags.push({t:'red',s:'No profit exit defined'});
+  if(a.loss_exit==='yes'){dims.process+=4;flags.push({t:'green',s:'Loss exit defined at 40–50% drawdown'});}else if(a.loss_exit==='no'){dims.process-=3;flags.push({t:'red',s:'No loss exit — how options reach zero'});}
+  if(a.sell_not_exercise==='yes'){dims.process+=3;flags.push({t:'green',s:'Will sell contract — captures time value'});}else if(a.sell_not_exercise==='no')flags.push({t:'amber',s:'Planning to exercise — forfeits time value'});
+  if(a.experience==='experienced')dims.process+=2;else if(a.experience==='some')dims.process+=1;
+
+  Object.keys(dims).forEach(k=>{dims[k]=Math.max(0,Math.min(dmax[k],dims[k]));});
+  const totalMax=Object.values(dmax).reduce((a,b)=>a+b,0);
+  const totalScore=Object.values(dims).reduce((a,b)=>a+b,0);
+  const pct2=totalScore/totalMax;
+  const tl=isBull?'call':'put';
+  const strike=isStrong?'At or slightly in the money':'At the money';
+  const expiry=a.timing_confidence==='high'?'30–45 days':'60–90 days minimum';
+
+  let type,verdict,title,body,stats;
+  if(pct2>=0.70){type='buy';verdict='Strong setup';title=`Buy a ${tl} option`;body=`Setup is strong. ${isBull?'Buy a call':'Buy a put'} at ${strike} with ${expiry} to expiration. Sell the contract to close — do not exercise early — to capture full value. Stick to your defined exits.`;stats=[{l:'Instrument',v:tl.toUpperCase()+' option'},{l:'Strike',v:strike},{l:'Expiry',v:expiry},{l:'Max size',v:a.position_size==='very_large'?'Reduce — max 3%':'Per your plan'}];}
+  else if(pct2>=0.52){type='caution';verdict='Proceed carefully';title=`${isBull?'Call':'Put'} with reservations`;body='Some elements are positive but meaningful gaps exist. Consider buying more time, using a debit spread instead of a naked long, and capping position at 1% of portfolio.';stats=[{l:'Instrument',v:tl.toUpperCase()+' option'},{l:'Consider',v:'Debit spread'},{l:'Expiry minimum',v:'60–90 days'},{l:'Size max',v:'1% of portfolio'}];}
+  else if(pct2>=0.35){type='research';verdict='Not ready';title='Fill critical gaps first';body='Too many missing pieces — particularly around IV, break-even, and exit planning — to justify entering. Address the red flags identified before touching this trade.';stats=[{l:'Decision',v:'Not yet'},{l:'Priority 1',v:'Check IV rank'},{l:'Priority 2',v:'Calculate break-even'},{l:'Priority 3',v:'Define both exits'}];}
+  else{type='avoid';verdict='Do not trade';title='Pass on this trade';body='Multiple fundamental problems with this setup. Passing costs nothing. Wait for a setup where significantly more boxes are checked.';stats=[{l:'Decision',v:'Pass'},{l:'Score',v:Math.round(pct2*100)+'%'},{l:'Key issue',v:flags.filter(f=>f.t==='red')[0]?.s||'Multiple problems'},{l:'Revisit',v:'When setup improves'}];}
+  return{type,verdict,title,body,stats,dims,dimMax:dmax,flags:flags.slice(0,9),answers:a};
+}
+function optStop(title,body,a,dims,dmax){return{type:'hard-stop',verdict:'Hard stop',title,body,stats:[{l:'Decision',v:'Do not trade'},{l:'Type',v:'Hard stop'},{l:'Priority',v:'Understand the instrument first'},{l:'Next step',v:'Paper trade before real capital'}],dims,dimMax:dmax,flags:[{t:'red',s:title}],answers:a};}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let mode='stocks', step=0, answers={}, entryMode=null;
+let avData=null, prefill={}, evidence={}, companySummary=null, autoAnswered={};
+
+function getQs(){return mode==='stocks'?STOCK_Q:OPT_Q;}
+function cats(qs){const c=[];qs.forEach(q=>{if(!c.includes(q.cat))c.push(q.cat);});return c;}
+
+// ─── RENDER ENTRY MODE PICKER ─────────────────────────────────────────────────
+function renderEntryPicker(root) {
+  const isStocks = mode === 'stocks';
+  root.innerHTML = `
+    <div class="entry-picker">
+      <div class="entry-card ${entryMode==='manual'?'selected':''}" onclick="selectEntry('manual')">
+        <span class="ec-icon">✎</span>
+        <div class="ec-title">Manual</div>
+        <div class="ec-desc">Answer all ${isStocks?'28':'18'} questions yourself. No API key needed. Full control over every answer.</div>
+        <span class="ec-tag ec-tag-manual">${isStocks?'28':'18'} questions · No API key</span>
+      </div>
+      <div class="entry-card ${entryMode==='auto'&&isStocks?'selected':''} ${!isStocks?'entry-card-disabled':''}
+        " onclick="${isStocks?'selectEntry(\'auto\')':'null'}" style="${!isStocks?'opacity:.45;cursor:not-allowed;':''}" title="${!isStocks?'Alpha Vantage data applies to stocks only':''}">
+        <span class="ec-icon">⚡</span>
+        <div class="ec-title">Semi-Auto${!isStocks?' (stocks only)':''}</div>
+        <div class="ec-desc">${isStocks?'Enter a ticker and free Alpha Vantage key. 8 quantitative questions pre-filled from live financial data.':'Alpha Vantage data pre-fill is only available for the stocks framework. Options require manual entry.'}</div>
+        <span class="ec-tag ec-tag-auto">${isStocks?'8 auto-filled · 500 req/day free':'Stocks mode only'}</span>
+      </div>
+    </div>
+    ${entryMode ? renderEntryContent() : ''}
+  `;
+}
+
+function renderEntryContent() {
+  if (entryMode === 'manual') {
+    return `<button class="fetch-btn" onclick="startManual()" style="max-width:300px;margin:0 auto;display:block;">Start questionnaire →</button>`;
+  }
+  if (entryMode === 'auto') {
+    const savedKey = localStorage.getItem('av_api_key') || '';
+    const hasSavedKey = !!savedKey;
+    return `
+      <div class="ticker-panel">
+        <div class="tp-title">Fetch live financial data</div>
+        <p class="tp-sub">Enter the stock ticker and your free Alpha Vantage API key. The tool will fetch financial data and pre-fill 8 quantitative questions automatically.</p>
+        ${hasSavedKey ? `<div class="key-saved-row"><div class="key-saved-dot"></div>API key saved from previous session &nbsp;<button class="clear-key-btn" onclick="clearKey()">clear</button></div>` : ''}
+        <div class="input-row">
+          <div class="field-wrap">
+            <div class="field-label">TICKER SYMBOL</div>
+            <input class="field-input" id="ticker-input" type="text" placeholder="AAPL" maxlength="8" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div class="field-wrap">
+            <div class="field-label">ALPHA VANTAGE KEY ${hasSavedKey?'(SAVED)':''}</div>
+            <input class="field-input" id="apikey-input" type="password" placeholder="${hasSavedKey?'Using saved AV key — paste new to override':'Paste your free API key here'}" value="">
+          </div>
+        </div>
+        <p class="api-note">Free API key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank">alphavantage.co/support/#api-key</a> — instant, no credit card. 500 free requests/day (5/min), ~125 ticker lookups.</p>
+        <button class="fetch-btn" id="fetch-btn" onclick="doFetch()">Fetch data & begin →</button>
+        <div id="fetch-error"></div>
+      </div>
+    `;
+  }
+  return '';
+}
+
+function selectEntry(m) {
+  entryMode = m;
+  renderEntryPicker(document.getElementById('root'));
+}
+
+function clearKey() {
+  localStorage.removeItem('av_api_key');
+  renderEntryPicker(document.getElementById('root'));
+}
+
+function startManual() {
+  step = 0; answers = {}; prefill = {}; evidence = {}; companySummary = null; autoAnswered = {};
+  render();
+}
+
+async function doFetch() {
+  const tickerEl = document.getElementById('ticker-input');
+  const keyEl = document.getElementById('apikey-input');
+  const errorEl = document.getElementById('fetch-error');
+  const btn = document.getElementById('fetch-btn');
+
+  const ticker = tickerEl?.value?.trim();
+  const savedKey = localStorage.getItem('av_api_key') || '';
+  const apiKey = keyEl?.value?.trim() || savedKey;
+
+  if (!ticker) { showFetchError('Please enter a ticker symbol.'); return; }
+  if (!apiKey) { showFetchError('Please enter your Alpha Vantage API key. Free at alphavantage.co/support/#api-key'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Fetching...'; }
+
+  // Show loading
+  document.getElementById('root').innerHTML = `
+    <div class="loading-panel">
+      <div class="loading-spinner"></div>
+      <div class="loading-ticker">${ticker}</div>
+      <div class="loading-sub">Fetching 4 years of financial data from Alpha Vantage...</div>
+    </div>
+  `;
+
+  try {
+    const data = await fetchFMP(ticker, apiKey);
+    const analysis = analyzeFMPData(data);
+    prefill = analysis.prefill;
+    evidence = analysis.evidence;
+    companySummary = { ticker, ...analysis.summary };
+    autoAnswered = {};
+
+    // Save key if new
+    if (keyEl?.value?.trim()) {
+      localStorage.setItem('av_api_key', keyEl.value.trim());
+    }
+
+    // Auto-set prefilled answers
+    Object.keys(prefill).forEach(id => {
+      answers[id] = prefill[id];
+      autoAnswered[id] = true;
+    });
+
+    step = 0;
+    render();
+  } catch(err) {
+    renderEntryPicker(document.getElementById('root'));
+    document.getElementById('root').insertAdjacentHTML('beforeend', `
+      <div class="error-panel" style="margin-top:.75rem">
+        <div class="error-title">// fetch failed</div>
+        <div class="error-body">${err.message || 'Unable to fetch data. Check your ticker and API key.'}</div>
+      </div>
+    `);
+    if (btn) { btn.disabled = false; btn.textContent = 'Fetch data & begin →'; }
+  }
+}
+
+function showFetchError(msg) {
+  const el = document.getElementById('fetch-error');
+  if (el) el.innerHTML = `<div class="error-panel" style="margin-top:.75rem"><div class="error-body">${msg}</div></div>`;
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────────────
+function render() {
+  const qs = getQs();
+  const root = document.getElementById('root');
+
+  if (!entryMode) { renderEntryPicker(root); return; }
+
+  if (step >= qs.length) {
+    const result = mode === 'stocks' ? scoreStocks(answers) : scoreOptions(answers);
+    renderResult(root, result, qs);
+    return;
+  }
+
+  const q = qs[step];
+  const pct = Math.round((step / qs.length) * 100);
+  const allCats = cats(qs);
+  const curCatIdx = allCats.indexOf(q.cat);
+  const isAutoFilled = entryMode === 'auto' && autoAnswered[q.id] && prefill[q.id];
+
+  const dotsHtml = allCats.map((c,i) => {
+    const done = i < curCatIdx, active = i === curCatIdx;
+    const col = CAT_COLOR[c] || '#c5ef4a';
+    const ds = done ? `background:${col};border-color:${col};` : active ? `background:${col};border-color:${col};box-shadow:0 0 8px ${col}55;` : '';
+    return `<div class="cat-dot-item"><div class="cat-dot" style="${ds}"></div><span class="cat-label" style="color:${active?col:'var(--muted)'}">${c}</span></div>`;
+  }).join('');
+
+  const crumbsHtml = Object.entries(answers).filter(([k]) => !autoAnswered[k]).slice(-4).map(([k,v]) => {
+    const ql = qs.find(x => x.id === k);
+    const opt = ql?.opts.find(o => o.val === v);
+    return `<div class="crumb">${ql?.q?.split(' ').slice(0,3).join(' ')}… <strong>${opt?.label?.split('—')[0].split('(')[0].trim().slice(0,20)||v}</strong></div>`;
+  }).join('');
+
+  const catCol = CAT_COLOR[q.cat] || '#c5ef4a';
+
+  // Data summary card (only in auto mode, first question)
+  let summaryHtml = '';
+  if (step === 0 && entryMode === 'auto' && companySummary) {
+    const m = companySummary.metrics;
+    const dsMetrics = [
+      {label:'Gross margin',val:m.grossMargin!=null?pct(m.grossMargin):'N/A',color:metricColor('grossMargin',m),sub:m.grossMargin!=null?'latest year':''},
+      {label:'Free cash flow',val:m.fcf!=null?fmtB(m.fcf):'N/A',color:metricColor('fcf',m),sub:m.fcfGrowth?'growing':'latest yr'},
+      {label:'ROIC',val:m.roic!=null?pct(m.roic):'N/A',color:metricColor('roic',m),sub:'latest year'},
+      {label:'Net debt/EBITDA',val:m.ndEbitda!=null?(m.ndEbitda<=0?'Net cash':m.ndEbitda.toFixed(1)+'x'):'N/A',color:metricColor('ndEbitda',m),sub:'leverage ratio'},
+      {label:'Interest coverage',val:m.interestCoverage!=null?m.interestCoverage.toFixed(1)+'x':'N/A',color:metricColor('interestCoverage',m),sub:'EBIT / interest'},
+      {label:'FCF/Earnings',val:m.earningsConversion!=null?pct(m.earningsConversion):'N/A',color:metricColor('earningsConversion',m),sub:'quality signal'},
+      {label:'Current P/E',val:companySummary.pe!=null?companySummary.pe.toFixed(1)+'x':'N/A',color:'neutral',sub:'trailing'},
+      {label:'Hist. avg P/E',val:m.historicalPE!=null?m.historicalPE.toFixed(1)+'x':'N/A',color:'neutral',sub:'3-year average'},
+    ];
+    summaryHtml = `
+      <div class="data-summary">
+        <div class="ds-header">
+          <div class="ds-company">
+            <span class="ds-ticker-badge">${companySummary.ticker}</span>
+            <div>
+              <div class="ds-name">${companySummary.name}</div>
+              <div class="ds-sector">${companySummary.sector}${companySummary.mktCap?' · Mkt cap '+fmtB(companySummary.mktCap):''}</div>
+            </div>
+          </div>
+          <span class="ds-fmp-tag">Live AV data</span>
+        </div>
+        <div class="ds-grid">
+          ${dsMetrics.map(dm=>`<div class="ds-metric"><div class="ds-m-label">${dm.label}</div><div class="ds-m-val ${dm.color}">${dm.val}</div><div class="ds-m-sub">${dm.sub}</div></div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Prefill card for auto-answered questions
+  let prefillHtml = '';
+  if (isAutoFilled && evidence[q.id]) {
+    const suggestedOpt = q.opts.find(o => o.val === prefill[q.id]);
+    prefillHtml = `
+      <div class="prefill-card">
+        <div class="pf-header">
+          <span class="pf-tag">Auto-filled from Alpha Vantage</span>
+          <span class="pf-evidence">${evidence[q.id]}</span>
+        </div>
+        <div class="pf-suggestion">
+          <div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:3px">SUGGESTED ANSWER</div>
+            <div class="pf-suggested-val">${suggestedOpt?.label || prefill[q.id]}</div>
+          </div>
+          <button class="override-btn" onclick="toggleOverride('${q.id}')">Override ↓</button>
+        </div>
+        <div class="override-opts" id="override-${q.id}" style="display:none">
+          ${q.opts.map((o,i) => `
+            <button class="opt ${answers[q.id]===o.val?'prefilled-selected':''}" onclick="overrideAnswer('${q.id}','${o.val}')">
+              <div class="opt-key">${String.fromCharCode(65+i)}</div>
+              <div class="opt-body"><div class="opt-label">${o.label}</div>${o.sub?`<div class="opt-sub">${o.sub}</div>`:''}</div>
+            </button>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // For auto-filled questions, show a "next" button instead of options (unless overriding)
+  const showFullOpts = !isAutoFilled || (isAutoFilled && !prefill[q.id]);
+
+  root.innerHTML = `
+    ${summaryHtml}
+    <div class="progress-bar-wrap">
+      <div class="progress-top"><span class="prog-label">Q${step+1} OF ${qs.length}</span><span class="prog-pct">${pct}%</span></div>
+      <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="cat-dots">${dotsHtml}</div>
+    ${crumbsHtml?`<div class="breadcrumbs">${crumbsHtml}</div>`:''}
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">Q${String(step+1).padStart(2,'0')}</span>
+        <span class="q-cat-tag" style="color:${catCol};border-color:${catCol}35;background:${catCol}0e">${q.cat}</span>
+        ${isAutoFilled?`<span class="pf-tag" style="font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:99px;letter-spacing:.04em;">FMP auto</span>`:''}
+        <div class="q-meta-line"></div>
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${q.hint?`<div class="q-hint">${q.hint}</div>`:''}
+      ${prefillHtml}
+      ${showFullOpts ? `<div class="opts">
+        ${q.opts.map((o,i) => `
+          <button class="opt ${answers[q.id]===o.val?'prefilled-selected':''}" onclick="choose('${o.val}')">
+            <div class="opt-key">${String.fromCharCode(65+i)}</div>
+            <div class="opt-body">
+              <div class="opt-label">${o.label}</div>
+              ${o.sub?`<div class="opt-sub">${o.sub}</div>`:''}
+            </div>
+          </button>`).join('')}
+      </div>` : `<button class="fetch-btn" onclick="advanceFromPrefill()" style="margin-top:.5rem">Accept suggestion & continue →</button>`}
+    </div>
+    ${step>0?`<button class="back-btn" onclick="goBack()">← Previous</button>`:''}
+  `;
+}
+
+function toggleOverride(qId) {
+  const el = document.getElementById(`override-${qId}`);
+  if (el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+}
+
+function overrideAnswer(qId, val) {
+  answers[qId] = val;
+  autoAnswered[qId] = false;
+  step++;
+  window.scrollTo({top:260,behavior:'smooth'});
+  render();
+}
+
+function advanceFromPrefill() {
+  // Answer already set from prefill; just advance
+  step++;
+  window.scrollTo({top:260,behavior:'smooth'});
+  render();
+}
+
+function choose(val) {
+  const qs = getQs();
+  answers[qs[step].id] = val;
+  autoAnswered[qs[step].id] = false;
+  step++;
+  window.scrollTo({top:260,behavior:'smooth'});
+  render();
+}
+
+function goBack() {
+  if (step > 0) {
+    const qs = getQs();
+    step--;
+    const qId = qs[step].id;
+    // Restore prefill if applicable
+    if (prefill[qId]) {
+      answers[qId] = prefill[qId];
+      autoAnswered[qId] = true;
+    } else {
+      delete answers[qId];
+    }
+    render();
+  }
+}
+
+function restart() {
+  step=0; answers={}; entryMode=null; prefill={}; evidence={}; companySummary=null; autoAnswered={};
+  window.scrollTo({top:0,behavior:'smooth'});
+  render();
+}
+
+function switchMode(m) {
+  mode=m; step=0; answers={}; entryMode=null; prefill={}; evidence={}; companySummary=null; autoAnswered={};
+  ['stocks','options'].forEach(x=>{
+    document.getElementById('nav-'+x).classList.toggle('active',x===m);
+    document.getElementById('card-'+x).classList.toggle('active',x===m);
+  });
+  render();
+}
+
+// ─── RESULT RENDER ────────────────────────────────────────────────────────────
+function renderResult(root, result, qs) {
+  const dimKeys=mode==='stocks'?['preparation','quality','financial','valuation','risk','personal']:['directional','volatility','timing','risk','process'];
+  const dimLabels={preparation:'Preparation',quality:'Business quality',financial:'Financial health',valuation:'Valuation',risk:'Risk factors',personal:'Personal fit',directional:'Directional setup',volatility:'Vol. & pricing',timing:'Timing',process:'Process & exits'};
+
+  const dimBarsHtml=dimKeys.map(k=>{
+    const val=result.dims[k]||0,max=result.dimMax[k]||10;
+    const p=Math.max(0,Math.min(100,Math.round((val/max)*100)));
+    const color=p>=65?'#4aef9a':p>=40?'#efaa4a':'#ef5a5a';
+    return`<div class="dim-row"><span class="dim-name">${dimLabels[k]||k}</span><div class="dim-track"><div class="dim-bar" style="width:${p}%;background:${color}"></div></div><span class="dim-score">${p}%</span></div>`;
+  }).join('');
+
+  const flagsHtml=result.flags.map(f=>{
+    const wasAuto=f.autoSource?`<span class="source-badge">FMP</span>`:'';
+    return`<div class="flag-item"><div class="flag-dot flag-${f.t}"></div><span class="flag-text">${f.s}</span>${wasAuto}</div>`;
+  }).join('');
+
+  const catGroups={};
+  qs.forEach(q=>{
+    if(!catGroups[q.cat])catGroups[q.cat]=[];
+    if(result.answers[q.id]!==undefined){
+      const opt=q.opts.find(o=>o.val===result.answers[q.id]);
+      const wasAuto=autoAnswered[q.id]&&prefill[q.id];
+      catGroups[q.cat].push({key:q.q.replace(/\?.*$/,'').slice(0,48)+'?',val:opt?.label?.split('—')[0].split('(')[0].trim().slice(0,28)||result.answers[q.id],auto:wasAuto});
+    }
+  });
+
+  const summaryHtml=Object.entries(catGroups).map(([cat,rows])=>{
+    const col=CAT_COLOR[cat]||'#c5ef4a';
+    return`<div class="ans-cat-h" style="color:${col}">${cat}</div>${rows.map(r=>`<div class="ans-row"><span class="ans-key">${r.key}</span><div class="ans-right"><span class="ans-val">${r.val}</span>${r.auto?'<span class="ans-auto-tag">FMP</span>':''}</div></div>`).join('')}`;
+  }).join('');
+
+  const dataSourceNote = entryMode==='auto' ? `<div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:.5rem;padding:.4rem .8rem;background:var(--accent-dim);border:1px solid rgba(197,239,74,0.15);border-radius:6px;display:inline-block">AV-tagged answers were pre-filled from live Alpha Vantage data. Override answers are shown as you entered them.</div><br>` : '';
+
+  root.innerHTML=`
+    <div class="result-wrap">
+      <div class="result-main ${result.type}">
+        <div class="result-verdict">${result.verdict}</div>
+        <div class="result-title">${result.title}</div>
+        <div class="result-body">${result.body}</div>
+        <div class="result-grid">${result.stats.map(s=>`<div class="r-stat"><div class="r-label">${s.l}</div><div class="r-val">${s.v}</div></div>`).join('')}</div>
+      </div>
+      <div class="dim-section"><div class="dim-title">// dimension scores</div>${dimBarsHtml}</div>
+      <div class="flags-panel"><div class="flags-title">// key signals identified</div>${flagsHtml||'<div class="flag-item"><div class="flag-dot flag-amber"></div><span class="flag-text">Insufficient data for clear signals</span></div>'}</div>
+      <div class="answers-panel">
+        <div class="answers-title">// your answers</div>
+        ${dataSourceNote}
+        ${summaryHtml}
+      </div>
+      <button class="restart-btn" onclick="restart()">↺ &nbsp; Start over</button>
+    </div>
+  `;
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (!entryMode || step >= getQs().length) return;
+  const q = getQs()[step];
+  const isAutoQ = entryMode==='auto' && autoAnswered[q.id] && prefill[q.id];
+  if (isAutoQ) {
+    if (e.key === 'Enter' || e.key === ' ') advanceFromPrefill();
+    return;
+  }
+  const idx = e.key.toUpperCase().charCodeAt(0) - 65;
+  if (idx >= 0 && idx < q.opts.length) choose(q.opts[idx].val);
+  if (e.key === 'Backspace' && document.activeElement.tagName !== 'INPUT') goBack();
+});
+
+render();
+</script>
+</body>
+</html>
