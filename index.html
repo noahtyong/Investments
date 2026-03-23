@@ -499,224 +499,75 @@ const OPT_Q = [
 ];
 
 // ─── FMP DATA FETCHING & ANALYSIS ─────────────────────────────────────────────
-async function fetchFMP(ticker, apiKey) {
-  const t = ticker.toUpperCase().trim();
-  const k = apiKey.trim();
+async function fetchFMP() {
+  const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!ticker || !apiKey) return;
 
-  // Alpha Vantage: fetch overview + income + cash flow + balance sheet
-  async function avFetch(params) {
-    const url = AV_BASE + '?' + new URLSearchParams({...params, symbol: t, apikey: k}).toString();
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data['Note']) throw new Error('rate_limit');
-      if (data['Information']) throw new Error('invalid_key');
-      return data;
-    } catch(e) {
-      if (e.message === 'rate_limit') throw new Error('Alpha Vantage rate limit hit (25/day on free tier). Wait until tomorrow or upgrade at alphavantage.co');
-      if (e.message === 'invalid_key') throw new Error('API key rejected by Alpha Vantage. Make sure you copied the full key from alphavantage.co/support/#api-key');
-      if (e.message.includes('fetch')) throw new Error('Network blocked. Try serving the file over HTTP instead of opening directly from your desktop.');
-      throw e;
-    }
+  saveKey(apiKey);
+  const btn = document.querySelector('.api-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = 'Fetching...';
+  btn.disabled = true;
+
+  try {
+    // FMP Endpoints
+    const profileUrl = `https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${apiKey}`;
+    const incomeUrl = `https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=1&apikey=${apiKey}`;
+    const balanceUrl = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${apiKey}`;
+    const cashFlowUrl = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${ticker}?limit=1&apikey=${apiKey}`;
+
+    const [pRes, iRes, bRes, cRes] = await Promise.all([
+      fetch(profileUrl), fetch(incomeUrl), fetch(balanceUrl), fetch(cashFlowUrl)
+    ]);
+
+    const [pData, iData, bData, cData] = await Promise.all([
+      pRes.json(), iRes.json(), bRes.json(), cRes.json()
+    ]);
+
+    // FMP returns arrays for profile and statements
+    if (!pData || pData.length === 0) throw new Error("Ticker not found or invalid API key.");
+    
+    const p = pData[0];
+    const i = iData[0] || {};
+    const b = bData[0] || {};
+    const c = cData[0] || {};
+
+    // Map FMP data to your existing prefill structure
+    prefill = {
+      description: p.description || "No description available.",
+      industry: p.industry || "N/A",
+      sector: p.sector || "N/A",
+      grossMargin: i.grossProfitRatio ? (i.grossProfitRatio * 100).toFixed(1) + "%" : "N/A",
+      netMargin: i.netIncomeRatio ? (i.netIncomeRatio * 100).toFixed(1) + "%" : "N/A",
+      isProfit: i.netIncome > 0 ? "Yes" : "No",
+      isDiv: p.lastDiv > 0 ? "Yes" : "No",
+      roe: (i.netIncome && b.totalStockholdersEquity) 
+           ? ((i.netIncome / b.totalStockholdersEquity) * 100).toFixed(1) + "%" 
+           : "N/A",
+      fcfYield: (c.freeCashFlow && p.mktCap) 
+                ? ((c.freeCashFlow / p.mktCap) * 100).toFixed(1) + "%" 
+                : "N/A"
+    };
+
+    // Update the visual stats array
+    stats = [
+      { l: 'Mkt Cap', v: p.mktCap ? '$' + (p.mktCap / 1e9).toFixed(2) + 'B' : 'N/A' },
+      { l: 'Price', v: p.price ? '$' + p.price.toFixed(2) : 'N/A' },
+      { l: 'Div Yield', v: p.lastDiv ? p.lastDiv.toFixed(2) + '%' : '0.00%' },
+      { l: 'Sector', v: p.sector || 'N/A' },
+      { l: 'Industry', v: p.industry || 'N/A' }
+    ];
+
+    autoAnswered = { ...prefill };
+    renderStep();
+  } catch (err) {
+    console.error(err);
+    alert("Error fetching data. Check your API key or ticker. (FMP Free Tier: 250 req/day)");
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
   }
-
-  // Fetch overview first to validate key + ticker
-  const overview = await avFetch({ function: 'OVERVIEW' });
-  if (!overview || !overview.Symbol) {
-    throw new Error(`Ticker "${t}" not found or API key invalid. Check both and try again. Get a free key at alphavantage.co/support/#api-key`);
-  }
-
-  // Fetch financials (each costs 1 of your 25 daily requests)
-  const [income, cashflow, balance] = await Promise.all([
-    avFetch({ function: 'INCOME_STATEMENT' }),
-    avFetch({ function: 'CASH_FLOW' }),
-    avFetch({ function: 'BALANCE_SHEET' }),
-  ]);
-
-  return { overview, income, cashflow, balance };
-}
-
-function analyzeFMPData(data) {
-  const { overview, income, cashflow, balance } = data;
-  const prefill = {};
-  const evidence = {};
-  const metrics = {};
-
-  // Helper: get annual reports array from AV response
-  const annualIncome = income?.annualReports || [];
-  const annualCash = cashflow?.annualReports || [];
-  const annualBalance = balance?.annualReports || [];
-
-  function num(val) { return val && val !== 'None' ? parseFloat(val) : null; }
-
-  // ── Revenue trend ──
-  if (annualIncome.length >= 3) {
-    const revs = annualIncome.slice(0, 4).map(y => num(y.totalRevenue)).filter(v => v != null);
-    if (revs.length >= 3) {
-      const g1 = revs[1] ? (revs[0] - revs[1]) / Math.abs(revs[1]) : null;
-      const g2 = revs[2] ? (revs[1] - revs[2]) / Math.abs(revs[2]) : null;
-      evidence.revenue_trend = `Revenue: ${fmtB(revs[2])} → ${fmtB(revs[1])} → ${fmtB(revs[0])} | YoY: ${pct(g2)} → ${pct(g1)}`;
-      metrics.revenueGrowth = [g1, g2];
-      if (g1 != null && g2 != null && g1 > g2 && g1 > 0.05) prefill.revenue_trend = 'accelerating';
-      else if (g1 != null && g1 >= 0.08) prefill.revenue_trend = 'steady';
-      else if (g1 != null && g2 != null && g1 < g2 && g1 > 0) prefill.revenue_trend = 'slowing';
-      else if (g1 != null && g1 <= 0) prefill.revenue_trend = 'flat';
-      else prefill.revenue_trend = 'slowing';
-    }
-  }
-
-  // ── Gross margins ──
-  if (annualIncome.length >= 2) {
-    const marginData = annualIncome.slice(0, 3).map(y => {
-      const gp = num(y.grossProfit), rev = num(y.totalRevenue);
-      return gp != null && rev != null && rev > 0 ? gp / rev : null;
-    }).filter(v => v != null);
-    if (marginData.length >= 2) {
-      const latest = marginData[0];
-      const trend = marginData[0] - marginData[marginData.length - 1];
-      evidence.margins = `Gross margin: ${pct(marginData[marginData.length-1])} → ${pct(marginData[1]||marginData[0])} → ${pct(latest)} (${trend > 0 ? '+' : ''}${pct(trend)} trend)`;
-      metrics.grossMargin = latest;
-      if (trend < -0.02) prefill.margins = 'declining';
-      else if (latest >= 0.40) prefill.margins = 'high_stable';
-      else if (latest >= 0.15) prefill.margins = 'moderate';
-      else prefill.margins = 'low';
-    }
-  }
-
-  // ── Free cash flow ──
-  if (annualCash.length >= 2) {
-    const fcfs = annualCash.slice(0, 3).map(y => {
-      const ocf = num(y.operatingCashflow), capex = num(y.capitalExpenditures);
-      return ocf != null ? ocf - Math.abs(capex || 0) : null;
-    }).filter(v => v != null);
-    if (fcfs.length >= 1) {
-      metrics.fcf = fcfs[0];
-      metrics.fcfGrowth = fcfs.length >= 2 && fcfs[0] > fcfs[1];
-      evidence.cashflow = `FCF: ${fmtB(fcfs[2]||fcfs[1]||0)} → ${fmtB(fcfs[1]||fcfs[0]||0)} → ${fmtB(fcfs[0])}`;
-      if (fcfs[0] > 0 && metrics.fcfGrowth) prefill.cashflow = 'strong';
-      else if (fcfs[0] > 0) prefill.cashflow = 'positive';
-      else prefill.cashflow = 'burning';
-    }
-  }
-
-  // ── ROIC (approximated: EBIT*(1-tax) / (total assets - current liabilities)) ──
-  if (annualIncome.length >= 1 && annualBalance.length >= 1) {
-    const ebit = num(annualIncome[0].ebit) || num(annualIncome[0].operatingIncome);
-    const taxRate = (() => {
-      const pre = num(annualIncome[0].incomeBeforeTax);
-      const tax = num(annualIncome[0].incomeTaxExpense);
-      return pre && pre > 0 && tax != null ? Math.min(tax / pre, 0.4) : 0.21;
-    })();
-    const totalAssets = num(annualBalance[0].totalAssets);
-    const currentLiab = num(annualBalance[0].totalCurrentLiabilities);
-    if (ebit != null && totalAssets != null) {
-      const investedCapital = totalAssets - (currentLiab || 0);
-      const roic = investedCapital > 0 ? (ebit * (1 - taxRate)) / investedCapital : null;
-      if (roic != null) {
-        metrics.roic = roic;
-        evidence.roic = `EBIT: ${fmtB(ebit)} | Invested capital: ${fmtB(investedCapital)} | Est. ROIC: ${pct(roic)}`;
-        if (roic >= 0.20) prefill.roic = 'excellent';
-        else if (roic >= 0.12) prefill.roic = 'good';
-        else if (roic >= 0.06) prefill.roic = 'average';
-        else prefill.roic = 'poor';
-      }
-    }
-  }
-
-  // ── Debt / leverage ──
-  if (annualBalance.length >= 1 && annualIncome.length >= 1) {
-    const longTermDebt = num(annualBalance[0].longTermDebt) || 0;
-    const currentLTDebt = num(annualBalance[0].currentLongTermDebt) || 0;
-    const totalDebt = longTermDebt + currentLTDebt;
-    const cash = num(annualBalance[0].cashAndShortTermInvestments) || num(annualBalance[0].cashAndCashEquivalentsAtCarryingValue) || 0;
-    const netDebt = totalDebt - cash;
-    const ebitda = num(annualIncome[0].ebitda);
-    metrics.netDebt = netDebt;
-    if (ebitda && ebitda > 0) {
-      const ratio = netDebt / ebitda;
-      metrics.ndEbitda = ratio;
-      evidence.debt = `Net debt: ${fmtB(netDebt)} | EBITDA: ${fmtB(ebitda)} | Ratio: ${ratio.toFixed(1)}x`;
-      if (netDebt <= 0) prefill.debt = 'net_cash';
-      else if (ratio < 2) prefill.debt = 'low';
-      else if (ratio < 3.5) prefill.debt = 'moderate';
-      else prefill.debt = 'high';
-    } else if (netDebt <= 0) {
-      prefill.debt = 'net_cash';
-      evidence.debt = `Net cash position: ${fmtB(Math.abs(netDebt))}`;
-    }
-  }
-
-  // ── Interest coverage ──
-  if (annualIncome.length >= 1) {
-    const ebit = num(annualIncome[0].ebit) || num(annualIncome[0].operatingIncome);
-    const interest = Math.abs(num(annualIncome[0].interestExpense) || 0);
-    if (interest === 0) {
-      prefill.interest_coverage = 'na';
-      evidence.interest_coverage = 'No material interest expense';
-    } else if (ebit != null) {
-      const ratio = ebit / interest;
-      metrics.interestCoverage = ratio;
-      evidence.interest_coverage = `EBIT: ${fmtB(ebit)} | Interest: ${fmtB(interest)} | Coverage: ${ratio.toFixed(1)}x`;
-      if (ratio >= 5) prefill.interest_coverage = 'strong';
-      else if (ratio >= 2) prefill.interest_coverage = 'adequate';
-      else prefill.interest_coverage = 'weak';
-    }
-  }
-
-  // ── Accounting quality (FCF vs net income) ──
-  if (annualIncome.length >= 2 && annualCash.length >= 2) {
-    const nis = annualIncome.slice(0,3).map(y => num(y.netIncome)).filter(v => v != null);
-    const fcfs2 = annualCash.slice(0,3).map(y => {
-      const ocf = num(y.operatingCashflow), capex = num(y.capitalExpenditures);
-      return ocf != null ? ocf - Math.abs(capex || 0) : null;
-    }).filter(v => v != null);
-    if (nis.length >= 2 && fcfs2.length >= 2) {
-      const avgNI = nis.reduce((a,b)=>a+b,0)/nis.length;
-      const avgFCF = fcfs2.reduce((a,b)=>a+b,0)/fcfs2.length;
-      const conv = avgNI !== 0 ? avgFCF / avgNI : 1;
-      metrics.earningsConversion = conv;
-      evidence.accounting_quality = `Avg net income: ${fmtB(avgNI)} | Avg FCF: ${fmtB(avgFCF)} | FCF/Earnings: ${(conv*100).toFixed(0)}%`;
-      if (conv >= 0.85) prefill.accounting_quality = 'clean';
-      else if (conv >= 0.60) prefill.accounting_quality = 'minor';
-      else prefill.accounting_quality = 'concerns';
-    }
-  }
-
-  // ── Historical P/E from overview ──
-  if (overview) {
-    const pe = num(overview.PERatio);
-    const fwdPE = num(overview.ForwardPE);
-    const bookVal = num(overview.BookValue);
-    const price = num(overview.AnalystTargetPrice);
-    metrics.currentPE = pe;
-    if (pe != null) {
-      // AV doesn't give historical P/E directly; use sector P/E if available
-      const sector52wHigh = num(overview['52WeekHigh']);
-      const sector52wLow = num(overview['52WeekLow']);
-      // Estimate: if price near 52wk high → above avg; near low → below avg
-      const currentPrice = num(overview.AnalystTargetPrice) || ((sector52wHigh||0) + (sector52wLow||0)) / 2;
-      if (sector52wHigh && sector52wLow) {
-        const range = sector52wHigh - sector52wLow;
-        const pos = range > 0 ? ((currentPrice||sector52wHigh) - sector52wLow) / range : 0.5;
-        evidence.val_history = `P/E: ${pe?.toFixed(1)}x | Fwd P/E: ${fwdPE?.toFixed(1)||'N/A'}x | 52wk range position: ${(pos*100).toFixed(0)}%`;
-        metrics.historicalPE = pe;
-        if (pos < 0.3) prefill.val_history = 'low';
-        else if (pos > 0.75) prefill.val_history = 'high';
-        else prefill.val_history = 'average';
-      }
-    }
-  }
-
-  const summary = {
-    name: overview?.Name || overview?.Symbol || '',
-    sector: overview?.Sector || 'Unknown',
-    mktCap: num(overview?.MarketCapitalization),
-    price: num(overview?.['200DayMovingAverage']),
-    pe: num(overview?.PERatio),
-    metrics
-  };
-
-  return { prefill, evidence, summary };
 }
 
 function fmtB(n) {
