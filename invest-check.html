@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Investment Logic Machine v2.5 (v4 Engine)</title>
+    <title>Investment Logic Machine v2.6 (v4 Reports)</title>
     <style>
         body { font-family: 'Courier New', monospace; background: #0b0b0d; color: #e1e1e1; padding: 40px; }
         .card { background: #141417; border: 1px solid #26262b; padding: 24px; border-radius: 8px; max-width: 700px; margin: auto; }
@@ -15,10 +15,10 @@
 <body>
 
 <div class="card">
-    <h2>// LOGIC MACHINE v2.5</h2>
+    <h2>// LOGIC MACHINE v2.6</h2>
     <input type="password" id="key" placeholder="v4 API Key">
     <input type="text" id="symbol" placeholder="Ticker (AAPL)">
-    <button onclick="run()">EXECUTE v4 ANALYSIS</button>
+    <button onclick="run()">EXECUTE v4 REPORT ANALYSIS</button>
     <div id="log">System Ready.</div>
 </div>
 
@@ -28,44 +28,48 @@ async function run() {
     const key = document.getElementById('key').value;
     const ticker = document.getElementById('symbol').value.toUpperCase();
     
-    log.innerHTML = `> Initializing v4 fetch for ${ticker}...\n`;
+    log.innerHTML = `> Initializing v4 Report Fetch for ${ticker}...\n`;
 
     try {
-        // v4 Company Outlook provides Name, Price, and Market Cap in one hit
-        const outlookRes = await fetch(`https://financialmodelingprep.com/api/v4/company-outlook?symbol=${ticker}&apikey=${key}`);
-        const outlook = await outlookRes.json();
+        // v4 Financial Reports JSON - This is the modern endpoint for new accounts
+        // We fetch the most recent full report (10-K or 10-Q)
+        const reportRes = await fetch(`https://financialmodelingprep.com/api/v4/financial-reports-json?symbol=${ticker}&year=2024&period=FY&apikey=${key}`);
+        const data = await reportRes.json();
 
-        if (outlook["Error Message"] || !outlook.profile) {
-            log.innerHTML += `<span class="red">> REJECTION: ${outlook["Error Message"] || "v4 Access Denied"}</span>\n`;
+        if (data["Error Message"] || !data.incomeStatement) {
+            log.innerHTML += `<span class="red">> REJECTION: ${data["Error Message"] || "v4 Data Not Found"}</span>\n`;
+            log.innerHTML += `> Note: Free tier might require Year=2023 or 2024 specifically.\n`;
             return;
         }
 
-        // v4 Financial Reports (most stable for new accounts)
-        const incomeRes = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=1&apikey=${key}`);
-        const income = await incomeRes.json();
+        // v4 structure maps data into arrays of objects with 'label' and 'value'
+        const getVal = (arr, label) => {
+            const item = arr.find(d => d.label === label);
+            return item ? parseFloat(item.value) : 0;
+        };
+
+        const revenue = getVal(data.incomeStatement, "Revenue");
+        const netIncome = getVal(data.incomeStatement, "Net income");
+        const assets = getVal(data.balanceSheet, "Total assets");
+        const liabilities = getVal(data.balanceSheet, "Total liabilities");
+        const equity = getVal(data.balanceSheet, "Total shareholders' equity");
+        const ebit = getVal(data.incomeStatement, "Operating income or loss");
+
+        log.innerHTML += `<span class="green">> v4 DATA PARSED SUCCESSFULLY</span>\n`;
+        log.innerHTML += `--------------------------------\n`;
+        log.innerHTML += `REVENUE:    $${(revenue / 1e9).toFixed(2)}B\n`;
+        log.innerHTML += `NET INCOME: $${(netIncome / 1e9).toFixed(2)}B\n`;
+        log.innerHTML += `EQUITY:     $${(equity / 1e9).toFixed(2)}B\n`;
+        log.innerHTML += `--------------------------------\n`;
         
-        const balanceRes = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
-        const balance = await balanceRes.json();
+        // Simple Logic Score
+        const margin = (netIncome / revenue) * 100;
+        const roe = (netIncome / equity) * 100;
 
-        const p = outlook.profile;
-        const i = income[0];
-        const b = balance[0];
-
-        // Manual Calculation Logic
-        const A = (b.totalCurrentAssets - b.totalCurrentLiabilities) / b.totalAssets;
-        const B = b.retainedEarnings / b.totalAssets;
-        const C = i.ebit / b.totalAssets;
-        const D = p.mktCap / b.totalLiabilities;
-        const E = i.revenue / b.totalAssets;
-        const zScore = (1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 1.0 * E).toFixed(2);
-
-        log.innerHTML += `<span class="green">> v4 ANALYSIS COMPLETE: ${p.companyName}</span>\n`;
+        log.innerHTML += `NET MARGIN: ${margin.toFixed(2)}%\n`;
+        log.innerHTML += `ROE:        ${roe.toFixed(2)}%\n`;
         log.innerHTML += `--------------------------------\n`;
-        log.innerHTML += `ALTMAN Z-SCORE: ${zScore}\n`;
-        log.innerHTML += `MARKET CAP:     $${(p.mktCap / 1e9).toFixed(2)}B\n`;
-        log.innerHTML += `NET MARGIN:     ${((i.netIncome / i.revenue) * 100).toFixed(2)}%\n`;
-        log.innerHTML += `--------------------------------\n`;
-        log.innerHTML += `VERDICT: ${zScore > 3 ? 'STRUCTURALLY SOUND' : 'FINANCIAL DISTRESS RISK'}`;
+        log.innerHTML += `VERDICT: ${margin > 10 ? 'STRONGLY PROFITABLE' : 'MARGIN PRESSURE'}`;
 
     } catch (e) {
         log.innerHTML += `<span class="red">> FATAL SYSTEM ERROR: ${e.message}</span>\n`;
