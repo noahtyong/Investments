@@ -47,39 +47,8 @@ button { width:100%; padding:16px; border-radius:10px; border:none; background:#
 </div>
 
 <script>
-async function run() {
-const ticker = document.getElementById('symbol').value.toUpperCase();
-if (!ticker) return alert("Enter ticker");
-
-const resBox = document.getElementById('results');
-const metricsBox = document.getElementById('metrics');
-const verdictBox = document.getElementById('verdictBox');
-const priceBox = document.getElementById('price');
-
-resBox.style.display = "block";
-metricsBox.innerHTML = "Loading...";
-
-try {
-// ===== BEST FREE DATA SOURCE (SEC FILINGS via FinancialModelingPrep ALTERNATIVE) =====
-// Using Yahoo Finance (no key required, more stable)
-
-const quoteRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`);
-const quoteData = await quoteRes.json();
-
-const statsRes = await fetch(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=financialData,defaultKeyStatistics`);
-const statsData = await statsRes.json();
-
-const result = statsData.quoteSummary.result[0];
-
-const price = quoteData.quoteResponse.result[0].regularMarketPrice;
-
-const revenue = result.financialData.totalRevenue?.raw || 0;
-const netIncome = result.financialData.netIncomeToCommon?.raw || 0;
-const equity = result.financialData.totalStockholderEquity?.raw || 1;
-const debt = result.financialData.totalDebt?.raw || 0;
-const fcf = result.financialData.freeCashflow?.raw || 0;
-
-const pe = result.defaultKeyStatistics.forwardPE?.raw || 0;
+const res = await fetch(`/api/data?ticker=${ticker}`);
+const data = await res.json();
 
 // ===== METRICS =====
 const safe = (n,d)=> d? n/d:0;
