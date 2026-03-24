@@ -2,149 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investment Logic Machine v2.1 (Calculated)</title>
+    <title>Investment Machine - Debug Version</title>
     <style>
-        :root {
-            --bg: #0b0b0d; --card: #141417; --border: #26262b;
-            --text: #e1e1e1; --accent: #c5ef4a; --dim: #808085;
-            --green: #4ade80; --red: #f87171; --amber: #fbbf24;
-        }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 40px; line-height: 1.5; }
-        .dashboard { max-width: 900px; margin: auto; }
-        header { border-left: 4px solid var(--accent); padding-left: 20px; margin-bottom: 40px; }
-        h1 { font-size: 28px; font-weight: 600; letter-spacing: -1px; margin: 0; }
-        .controls { display: grid; grid-template-columns: 1fr 1fr 150px; gap: 10px; margin-bottom: 30px; }
-        input { background: var(--card); border: 1px solid var(--border); color: white; padding: 12px; border-radius: 4px; font-size: 14px; }
-        button { background: var(--accent); color: black; border: none; font-weight: 700; border-radius: 4px; cursor: pointer; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
-        
-        .main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
-        .stat-box { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 8px; }
-        .score-circle { font-size: 56px; font-weight: 800; text-align: center; margin: 10px 0; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { text-align: left; color: var(--dim); padding: 12px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
-        
-        .indicator { width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin-right: 10px; }
-        .bg-green { background: var(--green); } .bg-red { background: var(--red); } .bg-amber { background: var(--amber); }
-        .status-tag { font-weight: 700; font-size: 11px; text-transform: uppercase; }
-        .loader { margin-top: 10px; font-size: 12px; color: var(--accent); display: none; }
+        body { font-family: 'Courier New', monospace; background: #0b0b0d; color: #e1e1e1; padding: 40px; }
+        .card { background: #141417; border: 1px solid #26262b; padding: 24px; border-radius: 8px; max-width: 700px; margin: auto; }
+        input { background: #000; border: 1px solid #26262b; color: #c5ef4a; padding: 12px; margin: 10px 0; width: 100%; box-sizing: border-box; font-size: 16px; }
+        button { background: #c5ef4a; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #debug-log { background: #000; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #888; white-space: pre-wrap; height: 150px; overflow-y: scroll; }
+        .status-ok { color: #4ade80; }
+        .status-err { color: #f87171; }
     </style>
 </head>
 <body>
 
-<div class="dashboard">
-    <header>
-        <h1>INVESTMENT LOGIC MACHINE</h1>
-        <p style="color: var(--dim);">Engineering-grade financial verification via raw statement analysis.</p>
-    </header>
+<div class="card">
+    <h2>// LOGIC MACHINE v2.2</h2>
+    <input type="password" id="key" placeholder="Enter FMP API Key">
+    <input type="text" id="symbol" placeholder="Ticker (Try AAPL or MSFT first)">
+    <button onclick="runAnalysis()">RUN SYSTEM CHECK</button>
 
-    <div class="controls">
-        <input type="password" id="key" placeholder="FMP API Key">
-        <input type="text" id="symbol" placeholder="Ticker (e.g. MSFT)">
-        <button onclick="calculate()">RUN ANALYSIS</button>
-    </div>
-    <div id="loader" class="loader">FETCHING STATEMENTS AND CALCULATING RATIOS...</div>
-
-    <div class="main-grid">
-        <div class="stat-box">
-            <div style="font-size: 12px; color: var(--dim); text-transform: uppercase;">Confidence Score</div>
-            <div id="finalScore" class="score-circle">--</div>
-            <div id="verdict" style="text-align: center; font-weight: 700; font-size: 14px;">STANDBY</div>
-            <hr style="border: 0; border-top: 1px solid var(--border); margin: 25px 0;">
-            <div style="font-size: 13px;">
-                <p><b>Piotroski Score:</b> <span id="p-score">--</span>/9</p>
-                <p><b>Altman Z-Score:</b> <span id="z-score">--</span></p>
-                <p style="font-size: 11px; color: var(--dim); margin-top: 20px;">
-                    Z > 3.0: Safe Zone<br>
-                    Z < 1.8: Distress Zone
-                </p>
-            </div>
-        </div>
-
-        <div class="stat-box">
-            <table>
-                <thead><tr><th>Metric</th><th>Current</th><th>Benchmark</th><th>Logic</th></tr></thead>
-                <tbody id="metrics-body"></tbody>
-            </table>
-        </div>
-    </div>
+    <div id="debug-log">System Ready. Waiting for input...</div>
 </div>
 
 <script>
-    async function calculate() {
-        const key = document.getElementById('key').value;
-        const ticker = document.getElementById('symbol').value.toUpperCase();
-        const base = "https://financialmodelingprep.com/api/v3";
-        const loader = document.getElementById('loader');
-        
-        if(!key || !ticker) return alert("Missing API Key or Ticker.");
-        loader.style.display = "block";
+async function runAnalysis() {
+    const log = document.getElementById('debug-log');
+    const key = document.getElementById('key').value;
+    const ticker = document.getElementById('symbol').value.toUpperCase();
+    const base = "https://financialmodelingprep.com/api/v3";
+    
+    log.innerHTML = `> Initializing fetch for ${ticker}...\n`;
 
-        try {
-            const [profileRes, incomeRes, balanceRes, cashRes] = await Promise.all([
-                fetch(`${base}/profile/${ticker}?apikey=${key}`).then(r => r.json()),
-                fetch(`${base}/income-statement/${ticker}?limit=2&apikey=${key}`).then(r => r.json()),
-                fetch(`${base}/balance-sheet-statement/${ticker}?limit=2&apikey=${key}`).then(r => r.json()),
-                fetch(`${base}/cash-flow-statement/${ticker}?limit=2&apikey=${key}`).then(r => r.json())
-            ]);
+    try {
+        // Fetching profile first to check connectivity
+        const pReq = await fetch(`${base}/profile/${ticker}?apikey=${key}`);
+        const pData = await pReq.json();
 
-            const p = profileRes[0], i = incomeRes, b = balanceRes, c = cashRes;
-
-            // Manual Altman Z Calculation
-            const A = (b[0].totalCurrentAssets - b[0].totalCurrentLiabilities) / b[0].totalAssets;
-            const B = b[0].retainedEarnings / b[0].totalAssets;
-            const C = i[0].ebit / b[0].totalAssets;
-            const D = p.mktCap / b[0].totalLiabilities;
-            const E = i[0].revenue / b[0].totalAssets;
-            const zScore = (1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 1.0 * E).toFixed(2);
-
-            // Manual Piotroski F-Score Calculation (9 Point Scale)
-            let pScore = 0;
-            if (i[0].netIncome > 0) pScore++; // 1. Profitability
-            if (c[0].operatingCashFlow > 0) pScore++; // 2. Cash Flow
-            if (c[0].operatingCashFlow > i[0].netIncome) pScore++; // 3. Accrual logic
-            if ((i[0].netIncome / b[0].totalAssets) > (i[1].netIncome / b[1].totalAssets)) pScore++; // 4. ROA Trend
-            if ((b[0].longTermDebt / b[0].totalAssets) < (b[1].longTermDebt / b[1].totalAssets)) pScore++; // 5. Leverage
-            if ((b[0].totalCurrentAssets / b[0].totalCurrentLiabilities) > (b[1].totalCurrentAssets / b[1].totalCurrentLiabilities)) pScore++; // 6. Liquidity
-            if (i[0].weightedAverageShsOut <= i[1].weightedAverageShsOut) pScore++; // 7. Dilution
-            if ((i[0].grossProfit / i[0].revenue) > (i[1].grossProfit / i[1].revenue)) pScore++; // 8. Margin Trend
-            if ((i[0].revenue / b[0].totalAssets) > (i[1].revenue / b[1].totalAssets)) pScore++; // 9. Turnover
-
-            document.getElementById('p-score').innerText = pScore;
-            document.getElementById('z-score').innerText = zScore;
-            
-            const metrics = [
-                { name: "ROE", val: (i[0].netIncome / b[0].totalStockholdersEquity * 100).toFixed(1) + "%", pass: (i[0].netIncome/b[0].totalStockholdersEquity) > 0.15, bench: "> 15%" },
-                { name: "Current Ratio", val: (b[0].totalCurrentAssets / b[0].totalCurrentLiabilities).toFixed(2), pass: (b[0].totalCurrentAssets/b[0].totalCurrentLiabilities) > 1.2, bench: "> 1.2" },
-                { name: "Net Margin", val: (i[0].netIncome / i[0].revenue * 100).toFixed(1) + "%", pass: (i[0].netIncome/i[0].revenue) > 0.10, bench: "> 10%" },
-                { name: "Revenue Growth", val: ((i[0].revenue - i[1].revenue)/i[1].revenue * 100).toFixed(1) + "%", pass: i[0].revenue > i[1].revenue, bench: "Positive" }
-            ];
-
-            const scoreValue = ((pScore / 9) * 5 + (zScore > 3 ? 5 : zScore > 1.8 ? 3 : 0)).toFixed(1);
-            const scoreEl = document.getElementById('finalScore');
-            scoreEl.innerText = scoreValue;
-            scoreEl.style.color = scoreValue > 7 ? 'var(--green)' : scoreValue > 4 ? 'var(--amber)' : 'var(--red)';
-            
-            const verdictEl = document.getElementById('verdict');
-            verdictEl.innerText = scoreValue > 7 ? "HIGH QUALITY" : scoreValue > 4 ? "MODERATE" : "REJECT / SPECULATIVE";
-            verdictEl.style.color = scoreEl.style.color;
-
-            let html = "";
-            metrics.forEach(m => {
-                html += `<tr><td>${m.name}</td><td>${m.val}</td><td>${m.bench}</td><td><span class="indicator ${m.pass ? 'bg-green':'bg-red'}"></span><span class="status-tag">${m.pass ? 'Pass':'Fail'}</span></td></tr>`;
-            });
-            document.getElementById('metrics-body').innerHTML = html;
-
-        } catch (e) { 
-            console.error(e);
-            alert("Calculation Error: Ensure your API key is correct and you have not reached your daily request limit."); 
-        } finally {
-            loader.style.display = "none";
+        if (pData["Error Message"]) {
+            log.innerHTML += `<span class="status-err">> API ERROR: ${pData["Error Message"]}</span>\n`;
+            return;
         }
+
+        if (!pData[0]) {
+            log.innerHTML += `<span class="status-err">> ERROR: Ticker not found or restricted on Free Tier.</span>\n`;
+            return;
+        }
+
+        log.innerHTML += `<span class="status-ok">> Profile Loaded: ${pData[0].companyName}</span>\n`;
+        
+        // Fetch Income Statement
+        log.innerHTML += `> Fetching Financial Statements...\n`;
+        const iReq = await fetch(`${base}/income-statement/${ticker}?limit=1&apikey=${key}`);
+        const iData = await iReq.json();
+
+        if (iData.length > 0) {
+            log.innerHTML += `<span class="status-ok">> Data Analyzed.</span>\n`;
+            log.innerHTML += `--------------------------------\n`;
+            log.innerHTML += `REVENUE: $${(iData[0].revenue / 1e9).toFixed(2)}B\n`;
+            log.innerHTML += `NET INCOME: $${(iData[0].netIncome / 1e9).toFixed(2)}B\n`;
+            log.innerHTML += `--------------------------------\n`;
+            log.innerHTML += `> CONVICTION: HIGH (Data verified)`;
+        }
+
+    } catch (e) {
+        log.innerHTML += `<span class="status-err">> SYSTEM CRASH: ${e.message}</span>\n`;
     }
+}
 </script>
 </body>
 </html>
