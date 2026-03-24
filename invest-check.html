@@ -2,70 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Investment Machine - Debug Version</title>
+    <title>Investment Logic Machine v2.3</title>
     <style>
         body { font-family: 'Courier New', monospace; background: #0b0b0d; color: #e1e1e1; padding: 40px; }
         .card { background: #141417; border: 1px solid #26262b; padding: 24px; border-radius: 8px; max-width: 700px; margin: auto; }
-        input { background: #000; border: 1px solid #26262b; color: #c5ef4a; padding: 12px; margin: 10px 0; width: 100%; box-sizing: border-box; font-size: 16px; }
-        button { background: #c5ef4a; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        #debug-log { background: #000; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; color: #888; white-space: pre-wrap; height: 150px; overflow-y: scroll; }
-        .status-ok { color: #4ade80; }
-        .status-err { color: #f87171; }
+        input { background: #000; border: 1px solid #26262b; color: #c5ef4a; padding: 12px; margin: 10px 0; width: 100%; box-sizing: border-box; }
+        button { background: #c5ef4a; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; }
+        #log { background: #000; border: 1px solid #333; padding: 15px; margin-top: 20px; font-size: 12px; white-space: pre-wrap; color: #888; }
+        .green { color: #c5ef4a; } .red { color: #f87171; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>// LOGIC MACHINE v2.2</h2>
-    <input type="password" id="key" placeholder="Enter FMP API Key">
-    <input type="text" id="symbol" placeholder="Ticker (Try AAPL or MSFT first)">
-    <button onclick="runAnalysis()">RUN SYSTEM CHECK</button>
-
-    <div id="debug-log">System Ready. Waiting for input...</div>
+    <h2>// LOGIC MACHINE v2.3</h2>
+    <input type="password" id="key" placeholder="API Key">
+    <input type="text" id="symbol" placeholder="Ticker (AAPL)">
+    <button onclick="run()">EXECUTE ANALYSIS</button>
+    <div id="log">System Ready.</div>
 </div>
 
 <script>
-async function runAnalysis() {
-    const log = document.getElementById('debug-log');
+async function run() {
+    const log = document.getElementById('log');
     const key = document.getElementById('key').value;
     const ticker = document.getElementById('symbol').value.toUpperCase();
-    const base = "https://financialmodelingprep.com/api/v3";
     
     log.innerHTML = `> Initializing fetch for ${ticker}...\n`;
 
     try {
-        // Fetching profile first to check connectivity
-        const pReq = await fetch(`${base}/profile/${ticker}?apikey=${key}`);
-        const pData = await pReq.json();
+        // 1. Fetch Income Statement (Free v3 endpoint)
+        const incRes = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=1&apikey=${key}`);
+        const inc = await incRes.json();
 
-        if (pData["Error Message"]) {
-            log.innerHTML += `<span class="status-err">> API ERROR: ${pData["Error Message"]}</span>\n`;
+        // 2. Fetch Balance Sheet (Free v3 endpoint)
+        const balRes = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
+        const bal = await balRes.json();
+
+        // 3. Fetch Company Profile (For Market Cap)
+        const profRes = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${key}`);
+        const prof = await profRes.json();
+
+        if (inc.error || bal.error || prof.error || inc["Error Message"]) {
+            log.innerHTML += `<span class="red">> API REJECTION: ${inc["Error Message"] || "Access Denied"}</span>\n`;
             return;
         }
 
-        if (!pData[0]) {
-            log.innerHTML += `<span class="status-err">> ERROR: Ticker not found or restricted on Free Tier.</span>\n`;
-            return;
-        }
+        const i = inc[0], b = bal[0], p = prof[0];
 
-        log.innerHTML += `<span class="status-ok">> Profile Loaded: ${pData[0].companyName}</span>\n`;
-        
-        // Fetch Income Statement
-        log.innerHTML += `> Fetching Financial Statements...\n`;
-        const iReq = await fetch(`${base}/income-statement/${ticker}?limit=1&apikey=${key}`);
-        const iData = await iReq.json();
+        // LOGIC: Altman Z-Score Manual Calculation
+        const A = (b.totalCurrentAssets - b.totalCurrentLiabilities) / b.totalAssets;
+        const B = b.retainedEarnings / b.totalAssets;
+        const C = i.ebit / b.totalAssets;
+        const D = p.mktCap / b.totalLiabilities;
+        const E = i.revenue / b.totalAssets;
+        const zScore = (1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 1.0 * E).toFixed(2);
 
-        if (iData.length > 0) {
-            log.innerHTML += `<span class="status-ok">> Data Analyzed.</span>\n`;
-            log.innerHTML += `--------------------------------\n`;
-            log.innerHTML += `REVENUE: $${(iData[0].revenue / 1e9).toFixed(2)}B\n`;
-            log.innerHTML += `NET INCOME: $${(iData[0].netIncome / 1e9).toFixed(2)}B\n`;
-            log.innerHTML += `--------------------------------\n`;
-            log.innerHTML += `> CONVICTION: HIGH (Data verified)`;
-        }
+        log.innerHTML += `<span class="green">> ANALYSIS COMPLETE for ${p.companyName}</span>\n`;
+        log.innerHTML += `--------------------------------\n`;
+        log.innerHTML += `ALTMAN Z-SCORE: ${zScore}\n`;
+        log.innerHTML += `NET MARGIN:     ${((i.netIncome / i.revenue) * 100).toFixed(2)}%\n`;
+        log.innerHTML += `DEBT/EQUITY:    ${(b.totalDebt / b.totalStockholdersEquity).toFixed(2)}\n`;
+        log.innerHTML += `--------------------------------\n`;
+        log.innerHTML += `VERDICT: ${zScore > 3 ? 'STRUCTURALLY SOUND' : 'FINANCIAL DISTRESS RISK'}`;
 
     } catch (e) {
-        log.innerHTML += `<span class="status-err">> SYSTEM CRASH: ${e.message}</span>\n`;
+        log.innerHTML += `<span class="red">> FATAL ERROR: ${e.message}</span>\n`;
     }
 }
 </script>
