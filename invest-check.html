@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Investment Logic Machine v2.4 (Modern API)</title>
+    <title>Investment Logic Machine v2.5 (v4 Engine)</title>
     <style>
         body { font-family: 'Courier New', monospace; background: #0b0b0d; color: #e1e1e1; padding: 40px; }
         .card { background: #141417; border: 1px solid #26262b; padding: 24px; border-radius: 8px; max-width: 700px; margin: auto; }
@@ -15,10 +15,10 @@
 <body>
 
 <div class="card">
-    <h2>// LOGIC MACHINE v2.4</h2>
-    <input type="password" id="key" placeholder="API Key">
+    <h2>// LOGIC MACHINE v2.5</h2>
+    <input type="password" id="key" placeholder="v4 API Key">
     <input type="text" id="symbol" placeholder="Ticker (AAPL)">
-    <button onclick="run()">EXECUTE ANALYSIS</button>
+    <button onclick="run()">EXECUTE v4 ANALYSIS</button>
     <div id="log">System Ready.</div>
 </div>
 
@@ -28,47 +28,42 @@ async function run() {
     const key = document.getElementById('key').value;
     const ticker = document.getElementById('symbol').value.toUpperCase();
     
-    log.innerHTML = `> Initializing fetch for ${ticker}...\n`;
+    log.innerHTML = `> Initializing v4 fetch for ${ticker}...\n`;
 
     try {
-        // 1. Fetch Income Statement
-        const incRes = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=1&apikey=${key}`);
-        const inc = await incRes.json();
+        // v4 Company Outlook provides Name, Price, and Market Cap in one hit
+        const outlookRes = await fetch(`https://financialmodelingprep.com/api/v4/company-outlook?symbol=${ticker}&apikey=${key}`);
+        const outlook = await outlookRes.json();
 
-        // 2. Fetch Balance Sheet
-        const balRes = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
-        const bal = await balRes.json();
-
-        // 3. Fetch Quote (Used to calculate Market Cap manually if Profile is blocked)
-        const quoteRes = await fetch(`https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=${key}`);
-        const quote = await quoteRes.json();
-
-        if (!inc[0] || !bal[0] || !quote[0]) {
-            const errorMsg = inc["Error Message"] || "Ticker restricted or data unavailable on Free Tier.";
-            log.innerHTML += `<span class="red">> REJECTION: ${errorMsg}</span>\n`;
+        if (outlook["Error Message"] || !outlook.profile) {
+            log.innerHTML += `<span class="red">> REJECTION: ${outlook["Error Message"] || "v4 Access Denied"}</span>\n`;
             return;
         }
 
-        const i = inc[0], b = bal[0], q = quote[0];
+        // v4 Financial Reports (most stable for new accounts)
+        const incomeRes = await fetch(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=1&apikey=${key}`);
+        const income = await incomeRes.json();
         
-        // Manual Calculation of Altman Z-Score Components
-        // Market Cap is taken from the Quote endpoint
-        const mktCap = q.marketCap; 
-        
+        const balanceRes = await fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
+        const balance = await balanceRes.json();
+
+        const p = outlook.profile;
+        const i = income[0];
+        const b = balance[0];
+
+        // Manual Calculation Logic
         const A = (b.totalCurrentAssets - b.totalCurrentLiabilities) / b.totalAssets;
         const B = b.retainedEarnings / b.totalAssets;
         const C = i.ebit / b.totalAssets;
-        const D = mktCap / b.totalLiabilities;
+        const D = p.mktCap / b.totalLiabilities;
         const E = i.revenue / b.totalAssets;
-        
         const zScore = (1.2 * A + 1.4 * B + 3.3 * C + 0.6 * D + 1.0 * E).toFixed(2);
 
-        log.innerHTML += `<span class="green">> ANALYSIS COMPLETE: ${q.name}</span>\n`;
+        log.innerHTML += `<span class="green">> v4 ANALYSIS COMPLETE: ${p.companyName}</span>\n`;
         log.innerHTML += `--------------------------------\n`;
         log.innerHTML += `ALTMAN Z-SCORE: ${zScore}\n`;
+        log.innerHTML += `MARKET CAP:     $${(p.mktCap / 1e9).toFixed(2)}B\n`;
         log.innerHTML += `NET MARGIN:     ${((i.netIncome / i.revenue) * 100).toFixed(2)}%\n`;
-        log.innerHTML += `DEBT/EQUITY:    ${(b.totalDebt / b.totalStockholdersEquity).toFixed(2)}\n`;
-        log.innerHTML += `CURRENT PRICE:  $${q.price}\n`;
         log.innerHTML += `--------------------------------\n`;
         log.innerHTML += `VERDICT: ${zScore > 3 ? 'STRUCTURALLY SOUND' : 'FINANCIAL DISTRESS RISK'}`;
 
