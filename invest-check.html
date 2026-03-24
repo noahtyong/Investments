@@ -3,109 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Investment Logic Machine v3</title>
-
+<title>Investment Logic Machine v4</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
-body {
-    font-family: 'Inter', sans-serif;
-    background: #0b0b0d;
-    color: #e5e7eb;
-    margin: 0;
-    padding: 40px;
-}
-
-.container {
-    max-width: 900px;
-    margin: auto;
-}
-
-.header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.card {
-    background: #111114;
-    border: 1px solid #1f1f23;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
-
-input {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    border: 1px solid #2a2a2f;
-    background: #000;
-    color: #c5ef4a;
-    font-size: 14px;
-}
-
-button {
-    width: 100%;
-    padding: 16px;
-    border-radius: 10px;
-    border: none;
-    background: linear-gradient(90deg, #c5ef4a, #a3e635);
-    color: #000;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-button:hover {
-    transform: scale(1.02);
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.metric {
-    background: #0d0d10;
-    padding: 16px;
-    border-radius: 10px;
-    border: 1px solid #1f1f23;
-}
-
-.metric h4 {
-    margin: 0;
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.metric p {
-    margin: 6px 0 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.verdict {
-    margin-top: 25px;
-    padding: 20px;
-    text-align: center;
-    font-size: 20px;
-    border-radius: 10px;
-    font-weight: 600;
-}
-
-.green { background: #052e16; color: #4ade80; }
-.red { background: #2e0b0b; color: #f87171; }
-.yellow { background: #2e2a05; color: #facc15; }
-
-.footer {
-    margin-top: 20px;
-    font-size: 12px;
-    color: #6b7280;
-    text-align: center;
-}
+body { font-family: 'Inter', sans-serif; background:#0b0b0d; color:#e5e7eb; margin:0; padding:40px; }
+.container { max-width:900px; margin:auto; }
+.header { text-align:center; margin-bottom:30px; }
+.card { background:#111114; border:1px solid #1f1f23; border-radius:12px; padding:24px; }
+input { width:100%; padding:14px; margin-bottom:12px; border-radius:8px; border:1px solid #2a2a2f; background:#000; color:#c5ef4a; }
+button { width:100%; padding:16px; border-radius:10px; border:none; background:#c5ef4a; color:#000; font-weight:600; cursor:pointer; }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-top:20px; }
+.metric { background:#0d0d10; padding:16px; border-radius:10px; border:1px solid #1f1f23; }
+.metric h4 { margin:0; font-size:12px; color:#9ca3af; }
+.metric p { margin:6px 0 0; font-size:18px; font-weight:600; }
+.verdict { margin-top:25px; padding:20px; text-align:center; font-size:20px; border-radius:10px; font-weight:600; }
+.green { background:#052e16; color:#4ade80; }
+.red { background:#2e0b0b; color:#f87171; }
+.yellow { background:#2e2a05; color:#facc15; }
+.footer { margin-top:20px; font-size:12px; color:#6b7280; text-align:center; }
 </style>
 </head>
 
@@ -113,112 +29,99 @@ button:hover {
 <div class="container">
 
 <div class="header">
-    <h1>Investment Logic Machine</h1>
-    <p>Financial Viability Scanner</p>
+<h1>Investment Logic Machine v4</h1>
+<p>Real Financial Viability Engine</p>
 </div>
 
 <div class="card">
-    <input type="password" id="key" placeholder="API Key">
-    <input type="text" id="symbol" placeholder="Ticker (AAPL)">
-    <button onclick="run()">Analyze Investment</button>
+<input type="text" id="symbol" placeholder="Ticker (AAPL)">
+<button onclick="run()">Analyze</button>
 
-    <div id="results" style="display:none;">
-        <div class="grid" id="metrics"></div>
-        <div id="verdictBox" class="verdict"></div>
-        <div class="footer" id="price"></div>
-    </div>
+<div id="results" style="display:none;">
+<div class="grid" id="metrics"></div>
+<div id="verdictBox" class="verdict"></div>
+<div class="footer" id="price"></div>
+</div>
 </div>
 
 </div>
 
 <script>
 async function run() {
-    const key = document.getElementById('key').value;
-    const ticker = document.getElementById('symbol').value.toUpperCase();
+const ticker = document.getElementById('symbol').value.toUpperCase();
+if (!ticker) return alert("Enter ticker");
 
-    if (!ticker) return alert("Enter a ticker");
+const resBox = document.getElementById('results');
+const metricsBox = document.getElementById('metrics');
+const verdictBox = document.getElementById('verdictBox');
+const priceBox = document.getElementById('price');
 
-    const resBox = document.getElementById('results');
-    const metricsBox = document.getElementById('metrics');
-    const verdictBox = document.getElementById('verdictBox');
-    const priceBox = document.getElementById('price');
+resBox.style.display = "block";
+metricsBox.innerHTML = "Loading...";
 
-    resBox.style.display = "block";
-    metricsBox.innerHTML = "Loading...";
+try {
+// ===== BEST FREE DATA SOURCE (SEC FILINGS via FinancialModelingPrep ALTERNATIVE) =====
+// Using Yahoo Finance (no key required, more stable)
 
-    try {
-        const fetchSafe = async (url) => {
-            const res = await fetch(url);
-            const data = await res.json();
-    
-            if (!data || data["Error Message"]) {
-                throw new Error(data["Error Message"] || "API error");
-            }
-    
-            return data;
-        };
-    
-        const incomeData = await fetchSafe(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=2&apikey=${key}`);
-        const balanceData = await fetchSafe(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
-        const cashData = await fetchSafe(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${ticker}?limit=1&apikey=${key}`);
-        const ratioData = await fetchSafe(`https://financialmodelingprep.com/api/v3/ratios/${ticker}?limit=1&apikey=${key}`);
-        const priceData = await fetchSafe(`https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=${key}`);
-    
-        if (!incomeData.length || !balanceData.length || !cashData.length || !ratioData.length || !priceData.length) {
-            throw new Error("Incomplete financial data (free tier limitation or invalid ticker)");
-        }
-    
-        const income = incomeData[0];
-        const prev = incomeData[1] || null;
-        const balance = balanceData[0];
-        const cash = cashData[0];
-        const ratios = ratioData[0];
-        const price = priceData[0]?.price || 0;
-    
-        // SAFE calculations
-        const safe = (num, den) => den ? num / den : 0;
-    
-        const margin = safe(income.netIncome, income.revenue);
-        const roe = safe(income.netIncome, balance.totalStockholdersEquity);
-        const growth = prev ? safe(income.revenue - prev.revenue, prev.revenue) : 0;
-        const debt = safe(balance.totalLiabilities, balance.totalStockholdersEquity);
-        const fcfMargin = safe(cash.freeCashFlow, income.revenue);
-        const pe = ratios.priceEarningsRatio || 0;
-    
-        // SCORING (same as before)
-        let score = 0;
-    
-        if (margin > 0.2) score += 20; else if (margin > 0.1) score += 15;
-        if (roe > 0.2) score += 15; else if (roe > 0.15) score += 10;
-        if (growth > 0.1) score += 15; else if (growth > 0.05) score += 10;
-        if (debt < 1) score += 10; else score -= 5;
-        if (fcfMargin > 0.1) score += 15; else if (fcfMargin > 0.05) score += 10;
-        if (pe > 0 && pe < 20) score += 15; else if (pe < 35) score += 8; else score -= 5;
-    
-        let verdict = "AVOID";
-        let color = "red";
-    
-        if (score >= 70) { verdict = "STRONG BUY"; color = "green"; }
-        else if (score >= 55) { verdict = "BUY"; color = "green"; }
-        else if (score >= 40) { verdict = "HOLD"; color = "yellow"; }
-    
-        metricsBox.innerHTML = `
-            <div class="metric"><h4>Margin</h4><p>${(margin*100).toFixed(1)}%</p></div>
-            <div class="metric"><h4>ROE</h4><p>${(roe*100).toFixed(1)}%</p></div>
-            <div class="metric"><h4>Growth</h4><p>${(growth*100).toFixed(1)}%</p></div>
-            <div class="metric"><h4>Debt/Equity</h4><p>${debt.toFixed(2)}</p></div>
-            <div class="metric"><h4>FCF Margin</h4><p>${(fcfMargin*100).toFixed(1)}%</p></div>
-            <div class="metric"><h4>P/E</h4><p>${pe.toFixed(1)}</p></div>
-        `;
-    
-        verdictBox.className = `verdict ${color}`;
-        verdictBox.innerHTML = `${verdict} — Score: ${score}/100`;
-    
-        priceBox.innerHTML = `Current Price: $${price}`;
-    
-    } catch (err) {
-        metricsBox.innerHTML = `<span style="color:red;">${err.message}</span>`;
-    }
+const quoteRes = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`);
+const quoteData = await quoteRes.json();
+
+const statsRes = await fetch(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${ticker}?modules=financialData,defaultKeyStatistics`);
+const statsData = await statsRes.json();
+
+const result = statsData.quoteSummary.result[0];
+
+const price = quoteData.quoteResponse.result[0].regularMarketPrice;
+
+const revenue = result.financialData.totalRevenue?.raw || 0;
+const netIncome = result.financialData.netIncomeToCommon?.raw || 0;
+const equity = result.financialData.totalStockholderEquity?.raw || 1;
+const debt = result.financialData.totalDebt?.raw || 0;
+const fcf = result.financialData.freeCashflow?.raw || 0;
+
+const pe = result.defaultKeyStatistics.forwardPE?.raw || 0;
+
+// ===== METRICS =====
+const safe = (n,d)=> d? n/d:0;
+
+const margin = safe(netIncome, revenue);
+const roe = safe(netIncome, equity);
+const debtToEquity = safe(debt, equity);
+const fcfMargin = safe(fcf, revenue);
+
+// ===== SCORING =====
+let score = 0;
+
+if (margin > 0.2) score += 20; else if (margin > 0.1) score += 15;
+if (roe > 0.2) score += 15; else if (roe > 0.15) score += 10;
+if (debtToEquity < 1) score += 10; else score -= 5;
+if (fcfMargin > 0.1) score += 15; else if (fcfMargin > 0.05) score += 10;
+if (pe > 0 && pe < 20) score += 15; else if (pe < 35) score += 8; else score -= 5;
+
+let verdict = "AVOID";
+let color = "red";
+
+if (score >= 65) { verdict = "STRONG BUY"; color = "green"; }
+else if (score >= 50) { verdict = "BUY"; color = "green"; }
+else if (score >= 35) { verdict = "HOLD"; color = "yellow"; }
+
+metricsBox.innerHTML = `
+<div class="metric"><h4>Margin</h4><p>${(margin*100).toFixed(1)}%</p></div>
+<div class="metric"><h4>ROE</h4><p>${(roe*100).toFixed(1)}%</p></div>
+<div class="metric"><h4>Debt/Equity</h4><p>${debtToEquity.toFixed(2)}</p></div>
+<div class="metric"><h4>FCF Margin</h4><p>${(fcfMargin*100).toFixed(1)}%</p></div>
+<div class="metric"><h4>P/E</h4><p>${pe.toFixed(1)}</p></div>
+<div class="metric"><h4>Revenue</h4><p>$${(revenue/1e9).toFixed(1)}B</p></div>
+`;
+
+verdictBox.className = `verdict ${color}`;
+verdictBox.innerHTML = `${verdict} — Score ${score}/100`;
+
+priceBox.innerHTML = `Price: $${price}`;
+
+} catch (err) {
+metricsBox.innerHTML = `<span style='color:red;'>API failed (Yahoo blocked or invalid ticker)</span>`;
+}
 }
 </script>
 
