@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Viability Machine</title>
+    <style>
+        :root {
+            --bg: #0e1012;
+            --card: #16181b;
+            --border: #2a2d32;
+            --text: #e0e0e0;
+            --muted: #888;
+            --accent: #c5ef4a;
+            --green: #4caf50;
+            --amber: #ffc107;
+            --red: #f44336;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        header { margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        h1 { font-size: 24px; font-weight: 500; margin: 0; letter-spacing: -0.5px; }
+        p { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 120px;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        button {
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .score-display {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        #final-score { font-size: 64px; font-weight: 700; margin: 10px 0; }
+        #verdict-text { font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        th { text-align: left; padding: 14px; background: rgba(255,255,255,0.03); color: var(--muted); font-size: 12px; text-transform: uppercase; }
+        td { padding: 14px; border-top: 1px solid var(--border); font-size: 14px; }
+
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .good { color: var(--green); }
+        .acceptable { color: var(--amber); }
+        .poor { color: var(--red); }
+
+        .loading { display: none; color: var(--accent); font-size: 14px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Financial Viability Machine</h1>
+        <p>Input/Output framework for technical investment verification.</p>
+    </header>
+
+    <div class="setup-grid">
+        <input type="password" id="api-key" placeholder="FMP API Key">
+        <input type="text" id="ticker" placeholder="Ticker (e.g. MSFT)">
+        <button onclick="runAnalysis()">Analyze</button>
+    </div>
+
+    <div id="loader" class="loading">Fetching financial statements...</div>
+
+    <div id="score-card" class="score-display">
+        <div style="font-size: 12px; color: var(--muted); text-transform: uppercase;">Final Conviction Score</div>
+        <div id="final-score">0.0</div>
+        <div id="verdict-text">--</div>
+    </div>
+
+    <table id="results-table">
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Actual</th>
+                <th>Benchmark</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
+
+<script>
+    // Load key on start
+    document.getElementById('api-key').value = localStorage.getItem('fmp_key') || '';
+
+    async function runAnalysis() {
+        const key = document.getElementById('api-key').value;
+        const ticker = document.getElementById('ticker').value.toUpperCase();
+        
+        if (!key || !ticker) return alert("Enter API Key and Ticker");
+        localStorage.setItem('fmp_key', key);
+
+        const loader = document.getElementById('loader');
+        const scoreCard = document.getElementById('score-card');
+        const table = document.getElementById('results-table');
+        
+        loader.style.display = 'block';
+        scoreCard.style.display = 'none';
+        table.style.display = 'none';
+
+        try {
+            const baseUrl = `https://financialmodelingprep.com/api/v3`;
+            const [profile, income, balance, cash] = await Promise.all([
+                fetch(`${baseUrl}/profile/${ticker}?apikey=${key}`).then(res => res.json()),
+                fetch(`${baseUrl}/income-statement/${ticker}?period=annual&limit=1&apikey=${key}`).then(res => res.json()),
+                fetch(`${baseUrl}/balance-sheet-statement/${ticker}?period=annual&limit=1&apikey=${key}`).then(res => res.json()),
+                fetch(`${baseUrl}/cash-flow-statement/${ticker}?period=annual&limit=1&apikey=${key}`).then(res => res.json())
+            ]);
+
+            const p = profile[0], i = income[0], b = balance[0], c = cash[0];
+            
+            // Calculation Logic
+            const metrics = [
+                {
+                    name: "ROE",
+                    val: (i.netIncome / b.totalStockholdersEquity) * 100,
+                    unit: "%",
+                    check: (v) => v > 15 ? 2 : v > 10 ? 1 : 0,
+                    bench: "> 15%"
+                },
+                {
+                    name: "Debt to Equity",
+                    val: b.totalDebt / b.totalStockholdersEquity,
+                    unit: "",
+                    check: (v) => v < 0.5 ? 2 : v < 1.0 ? 1 : 0,
+                    bench: "< 0.5"
+                },
+                {
+                    name: "Net Margin",
+                    val: (i.netIncome / i.revenue) * 100,
+                    unit: "%",
+                    check: (v) => v > 15 ? 2 : v > 8 ? 1 : 0,
+                    bench: "> 15%"
+                },
+                {
+                    name: "Revenue Growth",
+                    val: ((i.revenue - income[1]?.revenue) / income[1]?.revenue) * 100 || 0,
+                    unit: "%",
+                    check: (v) => v > 10 ? 2 : v > 5 ? 1 : 0,
+                    bench: "> 10%"
+                },
+                {
+                    name: "Current Ratio",
+                    val: b.totalCurrentAssets / b.totalCurrentLiabilities,
+                    unit: "",
+                    check: (v) => v > 2.0 ? 2 : v > 1.0 ? 1 : 0,
+                    bench: "> 2.0"
+                },
+                {
+                    name: "FCF Yield",
+                    val: (c.freeCashFlow / p.mktCap) * 100,
+                    unit: "%",
+                    check: (v) => v > 5 ? 2 : v > 3 ? 1 : 0,
+                    bench: "> 5%"
+                }
+            ];
+
+            renderResults(metrics);
+        } catch (err) {
+            alert("Error fetching data. Check your API key.");
+            console.error(err);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    function renderResults(metrics) {
+        const body = document.getElementById('table-body');
+        body.innerHTML = '';
+        let totalPoints = 0;
+
+        metrics.forEach(m => {
+            const points = m.check(m.val);
+            totalPoints += points;
+            const statusClass = points === 2 ? 'good' : points === 1 ? 'acceptable' : 'poor';
+            const statusText = points === 2 ? 'Strong' : points === 1 ? 'Fair' : 'Weak';
+
+            body.innerHTML += `
+                <tr>
+                    <td>${m.name}</td>
+                    <td>${m.val.toFixed(2)}${m.unit}</td>
+                    <td>${m.bench}</td>
+                    <td class="${statusClass}">${statusText} (+${points})</td>
+                </tr>
+            `;
+        });
+
+        const finalScore = ((totalPoints / 12) * 10).toFixed(1);
+        document.getElementById('final-score').innerText = finalScore;
+        document.getElementById('final-score').className = finalScore > 7 ? 'good' : finalScore > 4 ? 'acceptable' : 'poor';
+        
+        let verdict = "Avoid";
+        if (finalScore > 7) verdict = "High Conviction";
+        else if (finalScore > 4) verdict = "Moderate Risk";
+        document.getElementById('verdict-text').innerText = verdict;
+        document.getElementById('verdict-text').className = document.getElementById('final-score').className;
+
+        document.getElementById('score-card').style.display = 'block';
+        document.getElementById('results-table').style.display = 'table';
+    }
+</script>
+
+</body>
+</html>
