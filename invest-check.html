@@ -147,49 +147,61 @@ async function run() {
     metricsBox.innerHTML = "Loading...";
 
     try {
-        const [incomeRes, balanceRes, cashRes, ratioRes, priceRes] = await Promise.all([
-            fetch(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=2&apikey=${key}`),
-            fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`),
-            fetch(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${ticker}?limit=1&apikey=${key}`),
-            fetch(`https://financialmodelingprep.com/api/v3/ratios/${ticker}?limit=1&apikey=${key}`),
-            fetch(`https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=${key}`)
-        ]);
-
-        const incomeData = await incomeRes.json();
-        const balanceData = await balanceRes.json();
-        const cashData = await cashRes.json();
-        const ratioData = await ratioRes.json();
-        const priceData = await priceRes.json();
-
+        const fetchSafe = async (url) => {
+            const res = await fetch(url);
+            const data = await res.json();
+    
+            if (!data || data["Error Message"]) {
+                throw new Error(data["Error Message"] || "API error");
+            }
+    
+            return data;
+        };
+    
+        const incomeData = await fetchSafe(`https://financialmodelingprep.com/api/v3/income-statement/${ticker}?limit=2&apikey=${key}`);
+        const balanceData = await fetchSafe(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${ticker}?limit=1&apikey=${key}`);
+        const cashData = await fetchSafe(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${ticker}?limit=1&apikey=${key}`);
+        const ratioData = await fetchSafe(`https://financialmodelingprep.com/api/v3/ratios/${ticker}?limit=1&apikey=${key}`);
+        const priceData = await fetchSafe(`https://financialmodelingprep.com/api/v3/quote/${ticker}?apikey=${key}`);
+    
+        if (!incomeData.length || !balanceData.length || !cashData.length || !ratioData.length || !priceData.length) {
+            throw new Error("Incomplete financial data (free tier limitation or invalid ticker)");
+        }
+    
         const income = incomeData[0];
-        const prev = incomeData[1];
+        const prev = incomeData[1] || null;
         const balance = balanceData[0];
         const cash = cashData[0];
         const ratios = ratioData[0];
-        const price = priceData[0].price;
-
-        const margin = income.netIncome / income.revenue;
-        const roe = income.netIncome / balance.totalStockholdersEquity;
-        const growth = prev ? (income.revenue - prev.revenue) / prev.revenue : 0;
-        const debt = balance.totalLiabilities / balance.totalStockholdersEquity;
-        const fcfMargin = cash.freeCashFlow / income.revenue;
-        const pe = ratios.priceEarningsRatio;
-
+        const price = priceData[0]?.price || 0;
+    
+        // SAFE calculations
+        const safe = (num, den) => den ? num / den : 0;
+    
+        const margin = safe(income.netIncome, income.revenue);
+        const roe = safe(income.netIncome, balance.totalStockholdersEquity);
+        const growth = prev ? safe(income.revenue - prev.revenue, prev.revenue) : 0;
+        const debt = safe(balance.totalLiabilities, balance.totalStockholdersEquity);
+        const fcfMargin = safe(cash.freeCashFlow, income.revenue);
+        const pe = ratios.priceEarningsRatio || 0;
+    
+        // SCORING (same as before)
         let score = 0;
+    
         if (margin > 0.2) score += 20; else if (margin > 0.1) score += 15;
         if (roe > 0.2) score += 15; else if (roe > 0.15) score += 10;
         if (growth > 0.1) score += 15; else if (growth > 0.05) score += 10;
         if (debt < 1) score += 10; else score -= 5;
         if (fcfMargin > 0.1) score += 15; else if (fcfMargin > 0.05) score += 10;
         if (pe > 0 && pe < 20) score += 15; else if (pe < 35) score += 8; else score -= 5;
-
+    
         let verdict = "AVOID";
         let color = "red";
-
+    
         if (score >= 70) { verdict = "STRONG BUY"; color = "green"; }
         else if (score >= 55) { verdict = "BUY"; color = "green"; }
         else if (score >= 40) { verdict = "HOLD"; color = "yellow"; }
-
+    
         metricsBox.innerHTML = `
             <div class="metric"><h4>Margin</h4><p>${(margin*100).toFixed(1)}%</p></div>
             <div class="metric"><h4>ROE</h4><p>${(roe*100).toFixed(1)}%</p></div>
@@ -198,14 +210,14 @@ async function run() {
             <div class="metric"><h4>FCF Margin</h4><p>${(fcfMargin*100).toFixed(1)}%</p></div>
             <div class="metric"><h4>P/E</h4><p>${pe.toFixed(1)}</p></div>
         `;
-
+    
         verdictBox.className = `verdict ${color}`;
         verdictBox.innerHTML = `${verdict} — Score: ${score}/100`;
-
+    
         priceBox.innerHTML = `Current Price: $${price}`;
-
+    
     } catch (err) {
-        metricsBox.innerHTML = "Error loading data";
+        metricsBox.innerHTML = `<span style="color:red;">${err.message}</span>`;
     }
 }
 </script>
